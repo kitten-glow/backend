@@ -8,15 +8,9 @@ import { TokenAndUserDto, TokenDto } from './auth.dto';
 
 @Injectable()
 export class AuthGatewayService {
-    constructor(
-        private readonly prisma: PrismaService,
-        private readonly authService: AuthService,
-    ) {}
+    constructor(private readonly prisma: PrismaService, private readonly authService: AuthService) {}
 
-    public async loginRoute({
-        username,
-        password,
-    }: AuthLoginGatewayRouteInput) {
+    public async loginRoute({ username, password }: AuthLoginGatewayRouteInput) {
         const user = await this.prisma.user.findUnique({
             where: {
                 username,
@@ -30,10 +24,7 @@ export class AuthGatewayService {
             });
         }
 
-        const isPasswordCorrect = this.authService.verifyPassword(
-            password,
-            user.password,
-        );
+        const isPasswordCorrect = this.authService.verifyPassword(password, user.password);
 
         if (!isPasswordCorrect) {
             return new ResponseDto({

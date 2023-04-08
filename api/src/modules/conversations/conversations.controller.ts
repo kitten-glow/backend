@@ -15,9 +15,7 @@ import { ConversationsGatewayService } from './conversations.gateway.service';
 @UseGuards(AuthHttpGuard)
 @Controller('conversations')
 export class ConversationsController {
-    constructor(
-        private readonly conversationsGatewayService: ConversationsGatewayService,
-    ) {}
+    constructor(private readonly conversationsGatewayService: ConversationsGatewayService) {}
 
     @ApiQuery({ name: 'count', required: false })
     @ApiQuery({ name: 'offset', required: false })
@@ -35,10 +33,7 @@ export class ConversationsController {
     }
 
     @Get('createGroup')
-    public createGroup(
-        @AuthUserHttp() user: User,
-        @Query('title') title: string,
-    ) {
+    public createGroup(@AuthUserHttp() user: User, @Query('title') title: string) {
         return this.conversationsGatewayService.createGroupRoute({
             user,
             title,
@@ -55,11 +50,7 @@ export class ConversationsController {
         @AuthUserHttp() user: User,
         @Query('conversationId', ParseIntPipe, RequiredPipe)
         conversationId: number,
-        @Query(
-            'needAdminApprove',
-            ParseBooleanPipe,
-            new DefaultValuePipe(false),
-        )
+        @Query('needAdminApprove', ParseBooleanPipe, new DefaultValuePipe(false))
         needAdminApprove: boolean,
         @Query('memberLimit', ParseIntPipe) memberLimit: number | undefined,
         @Query('expireDate', ParseDatePipe, IsDateFuturePipe)
@@ -77,19 +68,14 @@ export class ConversationsController {
     }
 
     @Get('previewInviteLink')
-    public previewInviteLink(
-        @Query('inviteLink', RequiredPipe) inviteLink: string,
-    ) {
+    public previewInviteLink(@Query('inviteLink', RequiredPipe) inviteLink: string) {
         return this.conversationsGatewayService.previewInviteLinkRoute({
             inviteLink,
         });
     }
 
     @Get('joinInviteLink')
-    public joinInviteLink(
-        @AuthUserHttp() user: User,
-        @Query('inviteLink', RequiredPipe) inviteLink: string,
-    ) {
+    public joinInviteLink(@AuthUserHttp() user: User, @Query('inviteLink', RequiredPipe) inviteLink: string) {
         return this.conversationsGatewayService.joinInviteLinkRoute({
             user,
             inviteLink,

@@ -9,9 +9,7 @@ describe('ConversationsController', () => {
             controllers: [ConversationsController],
         }).compile();
 
-        controller = module.get<ConversationsController>(
-            ConversationsController,
-        );
+        controller = module.get<ConversationsController>(ConversationsController);
     });
 
     it('should be defined', () => {

@@ -44,8 +44,7 @@ export class MessagesController {
         @Query('userId', ParseIntPipe) userId: number,
         @Query('offset', ParseIntPipe, new DefaultValuePipe(0)) offset: number,
         @Query('count', ParseIntPipe, new DefaultValuePipe(20)) count: number,
-        @Query('startMessageId', ParseIntPipe)
-        startMessageId: number | undefined,
+        @Query('startMessageId', ParseIntPipe) startMessageId: number | undefined,
         @Query('reversed', ParseBooleanPipe, new DefaultValuePipe(false))
         reversed: boolean,
     ) {
@@ -61,18 +60,12 @@ export class MessagesController {
     }
 
     @Get('markAsRead')
-    public markAsRead(
-        @AuthUserHttp() user: User,
-        @Query('messageId', ParseIntPipe) messageId: number,
-    ) {
+    public markAsRead(@AuthUserHttp() user: User, @Query('messageId', ParseIntPipe) messageId: number) {
         return this.messagesGatewayService.markAsReadRoute({ user, messageId });
     }
 
     @Get('pin')
-    public pin(
-        @AuthUserHttp() user: User,
-        @Query('messageId', ParseIntPipe) messageId: number,
-    ) {
+    public pin(@AuthUserHttp() user: User, @Query('messageId', ParseIntPipe) messageId: number) {
         return this.messagesGatewayService.pinRoute({ user, messageId });
     }
 
@@ -88,10 +81,7 @@ export class MessagesController {
     }
 
     @Get('delete')
-    public delete(
-        @AuthUserHttp() user: User,
-        @Query('messageId', ParseIntPipe) messageId: number,
-    ) {
+    public delete(@AuthUserHttp() user: User, @Query('messageId', ParseIntPipe) messageId: number) {
         return this.messagesGatewayService.deleteRoute({ user, messageId });
     }
 }

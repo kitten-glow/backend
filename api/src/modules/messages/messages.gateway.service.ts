@@ -1,9 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import {
-    ParticipantInStatus,
-    ServiceMessageType,
-    Conversation,
-} from '@prisma/client';
+import { ParticipantInStatus, ServiceMessageType, Conversation } from '@prisma/client';
 import { PrismaService } from '../../shared/prisma/prisma.service';
 import {
     MessagesDeleteRouteInput,
@@ -23,13 +19,7 @@ export class MessagesGatewayService {
 
     // роут непростой и один из самых важных в приложении.
     // вопрос с архитектурой решается
-    public async sendRoute({
-        user,
-        conversationId,
-        userId,
-        content,
-        silent,
-    }: MessagesSendRouteInput) {
+    public async sendRoute({ user, conversationId, userId, content, silent }: MessagesSendRouteInput) {
         if (!conversationId && !userId) {
             return 0;
         }
@@ -44,27 +34,26 @@ export class MessagesGatewayService {
 
             // здесь мы проверяем, есть ли уже диалог с этим пользователем.
             // если нет, нужно его создать, а потом уже отправлять сообщение
-            const privateConversation =
-                await this.prisma.privateConversation.findFirst({
-                    where: {
-                        participants: {
-                            every: {
-                                participant: {
-                                    status: ParticipantInStatus.IN,
-                                    ban: null,
-                                    AND: [
-                                        {
-                                            userId: user.id,
-                                        },
-                                        {
-                                            userId: userId,
-                                        },
-                                    ],
-                                },
+            const privateConversation = await this.prisma.privateConversation.findFirst({
+                where: {
+                    participants: {
+                        every: {
+                            participant: {
+                                status: ParticipantInStatus.IN,
+                                ban: null,
+                                AND: [
+                                    {
+                                        userId: user.id,
+                                    },
+                                    {
+                                        userId: userId,
+                                    },
+                                ],
                             },
                         },
                     },
-                });
+                },
+            });
 
             // создаем все что нужно для отправки сообщения
             if (!privateConversation) {
@@ -106,8 +95,7 @@ export class MessagesGatewayService {
                         conversationId: newConversation.id,
                         privateConversationParticipant: {
                             create: {
-                                privateConversationId:
-                                    newConversation.privateConversation.id,
+                                privateConversationId: newConversation.privateConversation.id,
                             },
                         },
                     },
@@ -120,8 +108,7 @@ export class MessagesGatewayService {
                         conversationId: newConversation.id,
                         privateConversationParticipant: {
                             create: {
-                                privateConversationId:
-                                    newConversation.privateConversation.id,
+                                privateConversationId: newConversation.privateConversation.id,
                             },
                         },
                     },
@@ -149,24 +136,23 @@ export class MessagesGatewayService {
 
         // при отправке сообщения в чат (необязательно групповой) по его id
         if (conversationId) {
-            const groupConversation =
-                await this.prisma.groupConversation.findFirst({
-                    where: {
-                        conversationId,
-                        participants: {
-                            some: {
-                                participant: {
-                                    status: ParticipantInStatus.IN,
-                                    ban: null,
-                                    userId: user.id,
-                                },
+            const groupConversation = await this.prisma.groupConversation.findFirst({
+                where: {
+                    conversationId,
+                    participants: {
+                        some: {
+                            participant: {
+                                status: ParticipantInStatus.IN,
+                                ban: null,
+                                userId: user.id,
                             },
                         },
                     },
-                    include: {
-                        conversation: true,
-                    },
-                });
+                },
+                include: {
+                    conversation: true,
+                },
+            });
 
             if (!groupConversation) {
                 return 0;
@@ -305,10 +291,7 @@ export class MessagesGatewayService {
         });
     }
 
-    public async markAsReadRoute({
-        user,
-        messageId,
-    }: MessagesMarkAsReadRouteInput) {
+    public async markAsReadRoute({ user, messageId }: MessagesMarkAsReadRouteInput) {
         const participant = await this.prisma.participant.findFirst({
             where: {
                 status: ParticipantInStatus.IN,
@@ -445,10 +428,7 @@ export class MessagesGatewayService {
         });
     }
 
-    public async getPinnedRoute({
-        user,
-        conversationId,
-    }: MessagesGetPinnedRouteInput) {
+    public async getPinnedRoute({ user, conversationId }: MessagesGetPinnedRouteInput) {
         const { conversation } = await this.prisma.participant.findFirst({
             where: {
                 status: ParticipantInStatus.IN,

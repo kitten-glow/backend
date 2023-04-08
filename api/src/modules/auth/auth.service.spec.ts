@@ -33,10 +33,7 @@ describe('AuthService', () => {
         const hashedPassword = await service.hashPassword(plainPassword);
         expect(hashedPassword).toBeDefined();
 
-        const comparedPassword = await service.verifyPassword(
-            plainPassword,
-            hashedPassword,
-        );
+        const comparedPassword = await service.verifyPassword(plainPassword, hashedPassword);
         expect(comparedPassword).toBe(true);
     });
 });

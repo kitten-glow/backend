@@ -2,10 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ResponseDto } from '../../common/dto/response.dto';
 import { UserDto } from './users.dto';
 import { PrismaService } from '../../shared/prisma/prisma.service';
-import {
-    UsersGetByIdGatewayRouteInput,
-    UsersGetByUsernameGatewayRouteInput,
-} from './users.gateway.input';
+import { UsersGetByIdGatewayRouteInput, UsersGetByUsernameGatewayRouteInput } from './users.gateway.input';
 
 @Injectable()
 export class UsersGatewayService {
@@ -34,9 +31,7 @@ export class UsersGatewayService {
         });
     }
 
-    public async getByUsernameRoute({
-        username,
-    }: UsersGetByUsernameGatewayRouteInput) {
+    public async getByUsernameRoute({ username }: UsersGetByUsernameGatewayRouteInput) {
         const user = await this.prisma.user.findUnique({
             where: {
                 username,

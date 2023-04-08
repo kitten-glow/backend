@@ -3,19 +3,16 @@ import {
     UserRequiredGatewayRouteInput,
 } from '../../common/types/gateway-route-input.interface';
 
-export interface ConversationsGetListRouteInput
-    extends UserRequiredGatewayRouteInput {
+export interface ConversationsGetListRouteInput extends UserRequiredGatewayRouteInput {
     count: number;
     offset: number;
 }
 
-export interface ConversationsCreateGroupRouteInput
-    extends UserRequiredGatewayRouteInput {
+export interface ConversationsCreateGroupRouteInput extends UserRequiredGatewayRouteInput {
     title: string;
 }
 
-export interface ConversationsCreateInviteLinkRouteInput
-    extends UserRequiredGatewayRouteInput {
+export interface ConversationsCreateInviteLinkRouteInput extends UserRequiredGatewayRouteInput {
     conversationId: number;
     needAdminApprove: boolean;
     memberLimit: number | undefined;
@@ -23,18 +20,15 @@ export interface ConversationsCreateInviteLinkRouteInput
     name: string | undefined;
 }
 
-export interface ConversationsPreviewInviteLinkRouteInput
-    extends BaseGatewayRouteInput {
+export interface ConversationsPreviewInviteLinkRouteInput extends BaseGatewayRouteInput {
     inviteLink: string;
 }
 
-export interface ConversationsJoinInviteLinkRouteInput
-    extends UserRequiredGatewayRouteInput {
+export interface ConversationsJoinInviteLinkRouteInput extends UserRequiredGatewayRouteInput {
     inviteLink: string;
 }
 
-export interface ConversationsSetTitleRouteInput
-    extends UserRequiredGatewayRouteInput {
+export interface ConversationsSetTitleRouteInput extends UserRequiredGatewayRouteInput {
     conversationId: number;
     title: string;
 }

@@ -7,11 +7,7 @@ import {
     ConversationsPreviewInviteLinkRouteInput,
     ConversationsSetTitleRouteInput,
 } from './conversations.gateway.input';
-import {
-    ParticipantInStatus,
-    Prisma,
-    ServiceMessageType,
-} from '@prisma/client';
+import { ParticipantInStatus, Prisma, ServiceMessageType } from '@prisma/client';
 import { SERVICE_MESSAGE_INCLUDE_DATA } from '../../common/constants/service-message-include-data.constant';
 import {
     ConversationDto,
@@ -20,11 +16,7 @@ import {
     PreviewInviteLinkDto,
     PrivateConversationDto,
 } from './conversations.dto';
-import {
-    EMPTY_SERVICE_MESSAGE_DTO,
-    MessageDto,
-    ServiceMessageDto,
-} from '../messages/messages.dto';
+import { EMPTY_SERVICE_MESSAGE_DTO, MessageDto, ServiceMessageDto } from '../messages/messages.dto';
 import { PrismaService } from '../../shared/prisma/prisma.service';
 import { ConversationsService } from './conversations.service';
 import { RequestException } from '../../common/exceptions/request.exception';
@@ -38,14 +30,8 @@ export class ConversationsGatewayService {
         private readonly conversationsService: ConversationsService,
     ) {}
 
-    public async getListRoute({
-        user,
-        count,
-        offset,
-    }: ConversationsGetListRouteInput) {
-        const participants = await this.prisma.$queryRaw<
-            { conversationId: number; unreadCount: number }[]
-        >`
+    public async getListRoute({ user, count, offset }: ConversationsGetListRouteInput) {
+        const participants = await this.prisma.$queryRaw<{ conversationId: number; unreadCount: number }[]>`
             SELECT 
                 "conversationId",
                 "lastSeenMessage",
@@ -57,9 +43,7 @@ export class ConversationsGatewayService {
                 ) AS "unreadCount"
             FROM "Participant" AS "_participant"
             WHERE "userId" = ${user.id} 
-                AND "_participant"."status" = '${Prisma.raw(
-                    ParticipantInStatus.IN,
-                )}' 
+                AND "_participant"."status" = '${Prisma.raw(ParticipantInStatus.IN)}' 
                 AND NOT EXISTS (
                     SELECT 1
                     FROM "ParticipantBan" "_participantBan"
@@ -87,9 +71,7 @@ export class ConversationsGatewayService {
         const lastMessages = await this.prisma.message.findMany({
             where: {
                 id: {
-                    in: conversations.map(
-                        (conversation) => conversation.lastMessageId,
-                    ),
+                    in: conversations.map((conversation) => conversation.lastMessageId),
                 },
                 deleted: false,
             },
@@ -119,20 +101,15 @@ export class ConversationsGatewayService {
             response: conversations.map((conversation) => {
                 const { groupConversation, privateConversation } = conversation;
                 const unreadCount = participants.find(
-                    (participant) =>
-                        participant.conversationId === conversation.id,
+                    (participant) => participant.conversationId === conversation.id,
                 ).unreadCount;
                 const lastMessage = lastMessages.find(
                     (message) => message.conversationId === conversation.id,
                 );
                 const user = privateConversation
-                    ? users.find((user) =>
-                          privateConversation.userIds.includes(user.id),
-                      )
+                    ? users.find((user) => privateConversation.userIds.includes(user.id))
                     : null;
-                const title = privateConversation
-                    ? user.username
-                    : conversation.groupConversation.title;
+                const title = privateConversation ? user.username : conversation.groupConversation.title;
 
                 return new ConversationDto({
                     id: conversation.id,
@@ -169,10 +146,7 @@ export class ConversationsGatewayService {
         });
     }
 
-    public async createGroupRoute({
-        user,
-        title,
-    }: ConversationsCreateGroupRouteInput) {
+    public async createGroupRoute({ user, title }: ConversationsCreateGroupRouteInput) {
         const conversation = await this.prisma.conversation.create({
             data: {
                 groupConversation: {
@@ -262,8 +236,7 @@ export class ConversationsGatewayService {
                         ...EMPTY_SERVICE_MESSAGE_DTO,
                         type: lastMessage.serviceMessage.type,
                         serviceMessageConversationCreated:
-                            lastMessage.serviceMessage
-                                .serviceMessageConversationCreated,
+                            lastMessage.serviceMessage.serviceMessageConversationCreated,
                     }),
                 }),
             }),
@@ -323,9 +296,7 @@ export class ConversationsGatewayService {
         });
     }
 
-    public async previewInviteLinkRoute({
-        inviteLink,
-    }: ConversationsPreviewInviteLinkRouteInput) {
+    public async previewInviteLinkRoute({ inviteLink }: ConversationsPreviewInviteLinkRouteInput) {
         const link = await this.prisma.conversationInviteLink.findUnique({
             where: {
                 inviteLink,
@@ -366,10 +337,7 @@ export class ConversationsGatewayService {
     }
 
     // todo вообще ничего не сделано
-    public async joinInviteLinkRoute({
-        user,
-        inviteLink,
-    }: ConversationsJoinInviteLinkRouteInput) {
+    public async joinInviteLinkRoute({ user, inviteLink }: ConversationsJoinInviteLinkRouteInput) {
         const link = await this.prisma.conversationInviteLink.findUnique({
             where: {
                 inviteLink,
@@ -385,11 +353,7 @@ export class ConversationsGatewayService {
     }
 
     // todo надо работать
-    public async setTitleRoute({
-        user,
-        conversationId,
-        title,
-    }: ConversationsSetTitleRouteInput) {
+    public async setTitleRoute({ user, conversationId, title }: ConversationsSetTitleRouteInput) {
         const participant = await this.prisma.participant.findFirst({
             where: {
                 userId: user.id,
@@ -448,8 +412,7 @@ export class ConversationsGatewayService {
                                     conversationId,
                                     byUserId: user.id,
                                     title,
-                                    oldTitle:
-                                        conversation.groupConversation.title,
+                                    oldTitle: conversation.groupConversation.title,
                                 },
                             },
                         },

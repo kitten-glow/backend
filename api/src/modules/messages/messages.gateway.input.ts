@@ -7,8 +7,7 @@ export interface MessagesSendRouteInput extends UserRequiredGatewayRouteInput {
     silent: boolean;
 }
 
-export interface MessagesGetListRouteInput
-    extends UserRequiredGatewayRouteInput {
+export interface MessagesGetListRouteInput extends UserRequiredGatewayRouteInput {
     conversationId: number | undefined;
     userId: number | undefined;
     offset: number;
@@ -17,8 +16,7 @@ export interface MessagesGetListRouteInput
     reversed: boolean;
 }
 
-export interface MessagesMarkAsReadRouteInput
-    extends UserRequiredGatewayRouteInput {
+export interface MessagesMarkAsReadRouteInput extends UserRequiredGatewayRouteInput {
     messageId: number;
 }
 
@@ -26,12 +24,10 @@ export interface MessagesPinRouteInput extends UserRequiredGatewayRouteInput {
     messageId: number;
 }
 
-export interface MessagesGetPinnedRouteInput
-    extends UserRequiredGatewayRouteInput {
+export interface MessagesGetPinnedRouteInput extends UserRequiredGatewayRouteInput {
     conversationId: number;
 }
 
-export interface MessagesDeleteRouteInput
-    extends UserRequiredGatewayRouteInput {
+export interface MessagesDeleteRouteInput extends UserRequiredGatewayRouteInput {
     messageId: number;
 }

@@ -17,9 +17,7 @@ async function bootstrap() {
     SwaggerModule.setup('docs', app, document);
 
     app.useGlobalFilters(new HttpExceptionFilter());
-    app.useGlobalInterceptors(
-        new ClassSerializerInterceptor(app.get(Reflector)),
-    );
+    app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
 
     await app.listen(80);
 }

@@ -4,7 +4,6 @@ export interface UsersGetByIdGatewayRouteInput extends BaseGatewayRouteInput {
     id: number;
 }
 
-export interface UsersGetByUsernameGatewayRouteInput
-    extends BaseGatewayRouteInput {
+export interface UsersGetByUsernameGatewayRouteInput extends BaseGatewayRouteInput {
     username: string;
 }
