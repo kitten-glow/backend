@@ -1,0 +1,75 @@
+version: '3.7'
+
+services:
+  reverse-proxy:
+    image: traefik:v2.8
+    networks:
+      - backend
+    command:
+      - "--providers.docker"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.tlsresolver.acme.tlschallenge=true"
+      - "--certificatesresolvers.tlsresolver.acme.storage=/letsencrypt/acme.json"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+      - "./letsencrypt:/letsencrypt"
+
+  api:
+    build:
+      context: api
+      target: production
+    restart: always
+    hostname: api
+    networks:
+      - backend
+    env_file:
+      - .env
+    volumes:
+      - ./api:/api
+      - /api/node_modules
+      - /api/dist
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.api.rule=Host(`api.${APP_DOMAIN}`)"
+      - "traefik.http.routers.api.entrypoints=web,websecure"
+    depends_on:
+      - redis
+      - postgres
+
+  redis:
+    image: redis:7-alpine
+    restart: always
+    networks:
+      - backend
+    env_file:
+      - .env
+    volumes:
+      - redis_data:/data
+
+  postgres:
+    image: postgres:14-alpine
+    restart: always
+    hostname: postgres
+    networks:
+      - backend
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${POSTGRES_DB_USERNAME}
+      POSTGRES_PASSWORD: ${POSTGRES_DB_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB_NAME}
+      PG_DATA: /var/lib/postgresql/data
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+networks:
+  backend:
+
+volumes:
+  postgres_data:
+  redis_data:

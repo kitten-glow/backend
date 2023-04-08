@@ -1,0 +1,326 @@
+generator client {
+    provider = "prisma-client-js"
+    previewFeatures = ["interactiveTransactions"]
+}
+
+datasource db {
+    provider = "postgresql"
+    url = env("POSTGRES_DATABASE_URL")
+}
+
+model User {
+    id Int @id @default(autoincrement())
+    username String @db.VarChar(30) @unique()
+    password String @db.VarChar(60)
+    createdAt DateTime @default(now())
+    verified Boolean @default(false)
+    contacts Contact[]
+    tokens Token[]
+}
+
+model Contact {
+    id Int @id @default(autoincrement())
+    userId Int
+    user User @relation(fields: [userId], references: [id])
+    phone String
+    name String
+
+    @@unique([userId, phone])
+}
+
+model Token {
+    id Int @id @default(autoincrement())
+    token String @db.VarChar(90) @unique
+    userId Int
+    user User @relation(fields: [userId], references: [id])
+    generatedAt DateTime @default(now())
+    active Boolean @default(true)
+}
+
+model Conversation {
+    id Int @id @default(autoincrement())
+    groupConversation GroupConversation?
+    privateConversation PrivateConversation?
+    participants Participant[]
+    messages Message[]
+    inviteLinks ConversationInviteLink[]
+    lastMessageId Int?
+    createdAt DateTime @default(now())
+}
+
+model GroupConversationPermissions {
+    id Int @id @default(autoincrement())
+    sendTextMessages Boolean @default(true)
+    groupConversationId Int @unique
+    groupConversation GroupConversation @relation(fields: [groupConversationId], references: [id])
+}
+
+model GroupConversation {
+    id Int @id @default(autoincrement())
+    conversationId Int @unique
+    conversation Conversation @relation(fields: [conversationId], references: [id])
+    title String @db.VarChar(30)
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+    permissions GroupConversationPermissions?
+    participants GroupConversationParticipant[]
+}
+
+model PrivateConversation {
+    id Int @id @default(autoincrement())
+    conversationId Int @unique
+    conversation Conversation @relation(fields: [conversationId], references: [id])
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+    userIds Int[]
+    participants PrivateConversationParticipant[]
+}
+
+model MessageReaction {
+    id Int @id @default(autoincrement())
+    messageId Int
+    message Message @relation(fields: [messageId], references: [id])
+    userId Int
+    reaction String @db.VarChar(30)
+}
+
+model Message {
+    id Int @id @default(autoincrement())
+    content String? @db.VarChar(1000)
+    createdAt DateTime @default(now())
+    updatedAt DateTime @default(now())
+    conversationId Int
+    conversation Conversation @relation(fields: [conversationId], references: [id])
+    senderId Int?
+    reactions MessageReaction[]
+    deleted Boolean @default(false)
+    attachments MessageAttachment[]
+    serviceMessage ServiceMessage?
+    pinned Boolean @default(false)
+
+    @@index([conversationId, pinned])
+}
+
+enum ServiceMessageType {
+    LEFT_CONVERSATION
+    ADDED_TO_CONVERSATION
+    REMOVED_FROM_CONVERSATION
+    CONVERSATION_TITLE_CHANGED
+    CONVERSATION_AVATAR_CHANGED
+    CONVERSATION_HISTORY_CLEARED
+    CONVERSATION_CREATED
+    MESSAGE_PINNED
+    MESSAGE_UNPINNED
+}
+
+model ServiceMessage {
+    id Int @id @default(autoincrement())
+    messageId Int @unique
+    message Message @relation(fields: [messageId], references: [id])
+    type ServiceMessageType
+    serviceMessageLeftConversation ServiceMessageLeftConversation?
+    serviceMessageAddedToConversation ServiceMessageAddedToConversation?
+    serviceMessageRemovedFromConversation ServiceMessageRemovedFromConversation?
+    serviceMessageConversationTitleChanged ServiceMessageConversationTitleChanged?
+    serviceMessageConversationAvatarChanged ServiceMessageConversationAvatarChanged?
+    serviceMessageConversationHistoryCleared ServiceMessageConversationHistoryCleared?
+    serviceMessageConversationCreated ServiceMessageConversationCreated?
+    serviceMessagePinned ServiceMessagePinned?
+    serviceMessageUnpinned ServiceMessageUnpinned?
+}
+
+model ServiceMessageLeftConversation {
+    id Int @id @default(autoincrement())
+    serviceMessageId Int @unique
+    serviceMessage ServiceMessage @relation(fields: [serviceMessageId], references: [id])
+    createdAt DateTime @default(now())
+    updatedAt DateTime @default(now())
+    conversationId Int
+    userId Int
+}
+
+model ServiceMessageAddedToConversation {
+    id Int @id @default(autoincrement())
+    serviceMessageId Int @unique
+    serviceMessage ServiceMessage @relation(fields: [serviceMessageId], references: [id])
+    createdAt DateTime @default(now())
+    updatedAt DateTime @default(now())
+    conversationId Int
+    userId Int
+    byUserId Int
+}
+
+model ServiceMessageRemovedFromConversation {
+    id Int @id @default(autoincrement())
+    serviceMessageId Int @unique
+    serviceMessage ServiceMessage @relation(fields: [serviceMessageId], references: [id])
+    createdAt DateTime @default(now())
+    updatedAt DateTime @default(now())
+    conversationId Int
+    userId Int
+    byUserId Int
+}
+
+model ServiceMessageConversationTitleChanged {
+    id Int @id @default(autoincrement())
+    serviceMessageId Int @unique
+    serviceMessage ServiceMessage @relation(fields: [serviceMessageId], references: [id])
+    createdAt DateTime @default(now())
+    updatedAt DateTime @default(now())
+    conversationId Int
+    oldTitle String @db.VarChar(30)
+    title String @db.VarChar(30)
+    byUserId Int
+}
+
+model ServiceMessageConversationAvatarChanged {
+    id Int @id @default(autoincrement())
+    serviceMessageId Int @unique
+    serviceMessage ServiceMessage @relation(fields: [serviceMessageId], references: [id])
+    createdAt DateTime @default(now())
+    updatedAt DateTime @default(now())
+    conversationId Int
+    oldAvatarUrl String @db.VarChar(1000)
+    avatarUrl String @db.VarChar(1000)
+    byUserId Int
+}
+
+model ServiceMessageConversationHistoryCleared {
+    id Int @id @default(autoincrement())
+    serviceMessageId Int @unique
+    serviceMessage ServiceMessage @relation(fields: [serviceMessageId], references: [id])
+    createdAt DateTime @default(now())
+    updatedAt DateTime @default(now())
+    conversationId Int
+    byUserId Int
+}
+
+model ServiceMessageConversationCreated {
+    id Int @id @default(autoincrement())
+    serviceMessageId Int @unique
+    serviceMessage ServiceMessage @relation(fields: [serviceMessageId], references: [id])
+    createdAt DateTime @default(now())
+    conversationId Int @unique
+    byUserId Int
+}
+
+model ServiceMessagePinned {
+    id Int @id @default(autoincrement())
+    serviceMessageId Int @unique
+    serviceMessage ServiceMessage @relation(fields: [serviceMessageId], references: [id])
+    createdAt DateTime @default(now())
+    conversationId Int @unique
+    byUserId Int
+    messageId Int
+}
+
+model ServiceMessageUnpinned {
+    id Int @id @default(autoincrement())
+    serviceMessageId Int @unique
+    serviceMessage ServiceMessage @relation(fields: [serviceMessageId], references: [id])
+    createdAt DateTime @default(now())
+    conversationId Int @unique
+    byUserId Int
+    messageId Int
+}
+
+model MessageAttachment {
+    id Int @id @default(autoincrement())
+    messageId Int @unique
+    message Message @relation(fields: [messageId], references: [id])
+    video Video?
+    image Image?
+    audio Audio?
+    file File?
+}
+
+model Video {
+    id Int @id @default(autoincrement())
+    messageAttachmentId Int @unique
+    messageAttachment MessageAttachment @relation(fields: [messageAttachmentId], references: [id])
+}
+
+model Image {
+    id Int @id @default(autoincrement())
+    messageAttachmentId Int @unique
+    messageAttachment MessageAttachment @relation(fields: [messageAttachmentId], references: [id])
+}
+
+model Audio {
+    id Int @id @default(autoincrement())
+    messageAttachmentId Int @unique
+    messageAttachment MessageAttachment @relation(fields: [messageAttachmentId], references: [id])
+}
+
+model File {
+    id Int @id @default(autoincrement())
+    messageAttachmentId Int @unique
+    messageAttachment MessageAttachment @relation(fields: [messageAttachmentId], references: [id])
+}
+
+model ParticipantBan {
+    id Int @id @default(autoincrement())
+    userId Int
+    participantId Int? @unique
+    participant Participant? @relation(fields: [participantId], references: [id])
+    createdBy Int
+    createdAt DateTime @default(now())
+    reason String?
+    // null если вечная
+    expireDate DateTime?
+}
+
+model Participant {
+    id Int @id @default(autoincrement())
+    userId Int
+    conversationId Int
+    conversation Conversation @relation(fields: [conversationId], references: [id])
+    status ParticipantInStatus @default(IN)
+    ban ParticipantBan?
+    lastSeenMessage Int?
+    joinedByLinkId Int?
+    joinedByLink ConversationInviteLink? @relation(fields: [joinedByLinkId], references: [id])
+    joinedAt DateTime @default(now())
+    groupConversationParticipant GroupConversationParticipant?
+    privateConversationParticipant PrivateConversationParticipant?
+
+    @@unique([userId, conversationId])
+}
+
+enum ParticipantInStatus {
+    IN
+    LEFT
+    KICKED
+}
+
+model GroupConversationParticipant {
+    id Int @id @default(autoincrement())
+    participantId Int @unique
+    participant Participant @relation(fields: [participantId], references: [id])
+    groupConversationId Int @unique
+    groupConversation GroupConversation @relation(fields: [groupConversationId], references: [id])
+}
+
+model PrivateConversationParticipant {
+    id Int @id @default(autoincrement())
+    participantId Int @unique
+    participant Participant @relation(fields: [participantId], references: [id])
+    privateConversationId Int @unique
+    privateConversation PrivateConversation @relation(fields: [privateConversationId], references: [id])
+}
+
+model ConversationInviteLink {
+    id Int @id @default(autoincrement())
+    conversationId Int
+    conversation Conversation? @relation(fields: [conversationId], references: [id])
+    createdBy Int
+    name String
+    joinedUsers Participant[]
+    inviteLink String @unique
+    createdAt DateTime @default(now())
+    memberLimit Int?
+    needAdminApprove Boolean @default(false)
+    // null если вечная
+    expireDate DateTime?
+    deleted Boolean @default(false)
+}

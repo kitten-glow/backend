@@ -1,0 +1,66 @@
+version: '3.7'
+
+services:
+  api:
+    build:
+      context: api
+      target: development
+    hostname: api
+    networks:
+      - backend
+    command:
+      - /bin/sh
+      - -c
+      - |
+        npm run start:dev
+        npm run prisma:generate:watch
+    restart: always
+    ports:
+      - "3100:80"
+      - "5555:5555"
+    env_file:
+      - .env
+    volumes:
+      - ./api/:/api
+      - /api/node_modules
+      - /api/dist
+    depends_on:
+      - redis
+      - postgres
+
+  redis:
+    image: redis:7-alpine
+    restart: always
+    networks:
+      - backend
+    ports:
+      - "6379:6379"
+    env_file:
+      - .env
+    volumes:
+      - redis_data:/data
+
+  postgres:
+    image: postgres:14-alpine
+    restart: always
+    hostname: postgres
+    networks:
+      - backend
+    ports:
+      - "5432:5432"
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${POSTGRES_DB_USERNAME}
+      POSTGRES_PASSWORD: ${POSTGRES_DB_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB_NAME}
+      PG_DATA: /var/lib/postgresql/data
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+networks:
+  backend:
+
+volumes:
+  postgres_data:
+  redis_data:

@@ -1,0 +1,461 @@
+import { Injectable } from '@nestjs/common';
+import {
+    ConversationsCreateGroupRouteInput,
+    ConversationsCreateInviteLinkRouteInput,
+    ConversationsGetListRouteInput,
+    ConversationsJoinInviteLinkRouteInput,
+    ConversationsPreviewInviteLinkRouteInput,
+    ConversationsSetTitleRouteInput,
+} from './conversations.gateway.input';
+import {
+    ParticipantInStatus,
+    Prisma,
+    ServiceMessageType,
+} from '@prisma/client';
+import { SERVICE_MESSAGE_INCLUDE_DATA } from '../../common/constants/service-message-include-data.constant';
+import {
+    ConversationDto,
+    GroupConversationDto,
+    InviteLinkDto,
+    PreviewInviteLinkDto,
+    PrivateConversationDto,
+} from './conversations.dto';
+import {
+    EMPTY_SERVICE_MESSAGE_DTO,
+    MessageDto,
+    ServiceMessageDto,
+} from '../messages/messages.dto';
+import { PrismaService } from '../../shared/prisma/prisma.service';
+import { ConversationsService } from './conversations.service';
+import { RequestException } from '../../common/exceptions/request.exception';
+import { UserDto } from '../users/users.dto';
+import { ResponseDto } from '../../common/dto/response.dto';
+
+@Injectable()
+export class ConversationsGatewayService {
+    constructor(
+        private readonly prisma: PrismaService,
+        private readonly conversationsService: ConversationsService,
+    ) {}
+
+    public async getListRoute({
+        user,
+        count,
+        offset,
+    }: ConversationsGetListRouteInput) {
+        const participants = await this.prisma.$queryRaw<
+            { conversationId: number; unreadCount: number }[]
+        >`
+            SELECT 
+                "conversationId",
+                "lastSeenMessage",
+                (
+                    SELECT COUNT(1)::int AS "unreadCount"
+                    FROM "Message" "_message"
+                    WHERE "_message"."id" > "lastSeenMessage"
+                    AND "_message"."conversationId" = "_participant"."conversationId"
+                ) AS "unreadCount"
+            FROM "Participant" AS "_participant"
+            WHERE "userId" = ${user.id} 
+                AND "_participant"."status" = '${Prisma.raw(
+                    ParticipantInStatus.IN,
+                )}' 
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM "ParticipantBan" "_participantBan"
+                    WHERE "_participantBan"."id" = "_participant"."id"
+                )
+        `;
+
+        const conversations = await this.prisma.conversation.findMany({
+            where: {
+                id: {
+                    in: participants.map((item) => item.conversationId),
+                },
+            },
+            orderBy: {
+                lastMessageId: 'desc',
+            },
+            skip: offset,
+            take: count,
+            include: {
+                groupConversation: true,
+                privateConversation: true,
+            },
+        });
+
+        const lastMessages = await this.prisma.message.findMany({
+            where: {
+                id: {
+                    in: conversations.map(
+                        (conversation) => conversation.lastMessageId,
+                    ),
+                },
+                deleted: false,
+            },
+            include: {
+                attachments: true,
+                serviceMessage: {
+                    include: SERVICE_MESSAGE_INCLUDE_DATA,
+                },
+            },
+        });
+
+        const userIds = conversations
+            .filter((conversation) => !!conversation.privateConversation)
+            .map((conversation) => conversation.privateConversation.userIds)
+            .map((userIds) => userIds.find((userId) => userId !== user.id));
+
+        const users = await this.prisma.user.findMany({
+            where: {
+                id: {
+                    in: userIds,
+                },
+            },
+        });
+
+        return new ResponseDto({
+            code: 1,
+            response: conversations.map((conversation) => {
+                const { groupConversation, privateConversation } = conversation;
+                const unreadCount = participants.find(
+                    (participant) =>
+                        participant.conversationId === conversation.id,
+                ).unreadCount;
+                const lastMessage = lastMessages.find(
+                    (message) => message.conversationId === conversation.id,
+                );
+                const user = privateConversation
+                    ? users.find((user) =>
+                          privateConversation.userIds.includes(user.id),
+                      )
+                    : null;
+                const title = privateConversation
+                    ? user.username
+                    : conversation.groupConversation.title;
+
+                return new ConversationDto({
+                    id: conversation.id,
+                    title,
+                    unreadCount,
+                    groupConversation: groupConversation
+                        ? new GroupConversationDto({
+                              title: groupConversation.title,
+                          })
+                        : null,
+                    privateConversation: privateConversation
+                        ? new PrivateConversationDto({
+                              user: new UserDto({
+                                  id: user.id,
+                                  username: user.username,
+                              }),
+                          })
+                        : null,
+                    lastMessage: new MessageDto({
+                        id: lastMessage.id,
+                        content: lastMessage.content,
+                        conversationId: lastMessage.conversationId,
+                        senderId: lastMessage.senderId,
+                        pinned: lastMessage.pinned,
+                        attachments: lastMessage.attachments,
+                        serviceMessage: lastMessage.serviceMessage
+                            ? new ServiceMessageDto({
+                                  ...lastMessage.serviceMessage,
+                              })
+                            : null,
+                    }),
+                });
+            }),
+        });
+    }
+
+    public async createGroupRoute({
+        user,
+        title,
+    }: ConversationsCreateGroupRouteInput) {
+        const conversation = await this.prisma.conversation.create({
+            data: {
+                groupConversation: {
+                    create: {
+                        title,
+                    },
+                },
+            },
+            include: {
+                groupConversation: true,
+            },
+        });
+
+        const participant = await this.prisma.participant.create({
+            data: {
+                userId: user.id,
+                conversationId: conversation.id,
+                groupConversationParticipant: {
+                    create: {
+                        groupConversationId: conversation.groupConversation.id,
+                    },
+                },
+            },
+        });
+
+        const lastMessage = await this.prisma.message.create({
+            data: {
+                conversationId: conversation.id,
+                serviceMessage: {
+                    create: {
+                        type: ServiceMessageType.CONVERSATION_CREATED,
+                        serviceMessageConversationCreated: {
+                            create: {
+                                conversationId: conversation.id,
+                                byUserId: user.id,
+                            },
+                        },
+                    },
+                },
+            },
+            include: {
+                attachments: true,
+                serviceMessage: {
+                    include: {
+                        serviceMessageConversationCreated: true,
+                    },
+                },
+            },
+        });
+
+        await this.prisma.conversation.update({
+            where: {
+                id: conversation.id,
+            },
+            data: {
+                lastMessageId: lastMessage.id,
+            },
+        });
+
+        await this.prisma.participant.update({
+            where: {
+                id: participant.id,
+            },
+            data: {
+                lastSeenMessage: lastMessage.id,
+            },
+        });
+
+        return new ResponseDto({
+            code: 1,
+            response: new ConversationDto({
+                id: conversation.id,
+                unreadCount: 0,
+                title: conversation.groupConversation.title,
+                groupConversation: new GroupConversationDto({
+                    title: conversation.groupConversation.title,
+                }),
+                privateConversation: null,
+                lastMessage: new MessageDto({
+                    id: lastMessage.id,
+                    content: lastMessage.content,
+                    conversationId: lastMessage.conversationId,
+                    senderId: lastMessage.senderId,
+                    pinned: lastMessage.pinned,
+                    attachments: lastMessage.attachments,
+                    serviceMessage: new ServiceMessageDto({
+                        ...EMPTY_SERVICE_MESSAGE_DTO,
+                        type: lastMessage.serviceMessage.type,
+                        serviceMessageConversationCreated:
+                            lastMessage.serviceMessage
+                                .serviceMessageConversationCreated,
+                    }),
+                }),
+            }),
+        });
+    }
+
+    public async createInviteLinkRoute({
+        user,
+        conversationId,
+        name,
+        needAdminApprove,
+        expireDate,
+        memberLimit,
+    }: ConversationsCreateInviteLinkRouteInput) {
+        const participant = await this.prisma.participant.findFirst({
+            where: {
+                conversationId,
+                userId: user.id,
+                status: ParticipantInStatus.IN,
+                ban: null,
+            },
+        });
+
+        if (!participant) {
+            throw new RequestException({
+                code: -1,
+                message: 'Chat not found',
+            });
+        }
+
+        const generatedLink = this.conversationsService.generateInviteLink();
+
+        const newLink = await this.prisma.conversationInviteLink.create({
+            data: {
+                conversationId,
+                inviteLink: generatedLink,
+                name: name || generatedLink,
+                expireDate: expireDate || null,
+                needAdminApprove,
+                memberLimit,
+                createdBy: user.id,
+            },
+        });
+
+        return new ResponseDto({
+            code: 1,
+            response: new InviteLinkDto({
+                conversationId,
+                inviteLink: generatedLink,
+                name: name || generatedLink,
+                expireDate: expireDate || null,
+                needAdminApprove,
+                memberLimit,
+                createdBy: user.id,
+                createdAt: newLink.createdAt,
+            }),
+        });
+    }
+
+    public async previewInviteLinkRoute({
+        inviteLink,
+    }: ConversationsPreviewInviteLinkRouteInput) {
+        const link = await this.prisma.conversationInviteLink.findUnique({
+            where: {
+                inviteLink,
+            },
+            include: {
+                conversation: {
+                    include: {
+                        groupConversation: true,
+                    },
+                },
+            },
+        });
+
+        if (!link) {
+            throw new RequestException({
+                code: -1,
+                message: 'Link not found',
+            });
+        }
+
+        const { conversation } = link;
+
+        const membersCount = await this.prisma.participant.count({
+            where: {
+                conversationId: conversation.id,
+                status: ParticipantInStatus.IN,
+            },
+        });
+
+        return new ResponseDto({
+            code: 1,
+            response: new PreviewInviteLinkDto({
+                id: conversation.id,
+                title: conversation.groupConversation.title,
+                membersCount,
+            }),
+        });
+    }
+
+    // todo вообще ничего не сделано
+    public async joinInviteLinkRoute({
+        user,
+        inviteLink,
+    }: ConversationsJoinInviteLinkRouteInput) {
+        const link = await this.prisma.conversationInviteLink.findUnique({
+            where: {
+                inviteLink,
+            },
+            include: {
+                conversation: {
+                    include: {
+                        groupConversation: true,
+                    },
+                },
+            },
+        });
+    }
+
+    // todo надо работать
+    public async setTitleRoute({
+        user,
+        conversationId,
+        title,
+    }: ConversationsSetTitleRouteInput) {
+        const participant = await this.prisma.participant.findFirst({
+            where: {
+                userId: user.id,
+                status: ParticipantInStatus.IN,
+                ban: null,
+                conversation: {
+                    id: conversationId,
+                    OR: [
+                        {
+                            groupConversation: {
+                                isNot: undefined,
+                            },
+                        },
+                        // место под каналы
+                    ],
+                },
+            },
+            include: {
+                conversation: {
+                    include: {
+                        groupConversation: true,
+                    },
+                },
+            },
+        });
+
+        if (!participant) {
+            throw new RequestException({
+                code: -1,
+                message: 'Chat not found',
+            });
+        }
+
+        const { conversation } = participant;
+
+        if (conversation.groupConversation) {
+            await this.prisma.groupConversation.update({
+                where: {
+                    conversationId,
+                },
+                data: {
+                    title,
+                },
+            });
+        }
+
+        await this.prisma.$transaction(async (tx) => {
+            const lastMessage = await tx.message.create({
+                data: {
+                    conversationId,
+                    serviceMessage: {
+                        create: {
+                            type: ServiceMessageType.CONVERSATION_TITLE_CHANGED,
+                            serviceMessageConversationTitleChanged: {
+                                create: {
+                                    conversationId,
+                                    byUserId: user.id,
+                                    title,
+                                    oldTitle:
+                                        conversation.groupConversation.title,
+                                },
+                            },
+                        },
+                    },
+                },
+            });
+        });
+    }
+}
