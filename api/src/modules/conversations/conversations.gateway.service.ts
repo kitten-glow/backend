@@ -352,7 +352,6 @@ export class ConversationsGatewayService {
         });
     }
 
-    // todo надо работать
     public async setTitleRoute({ user, conversationId, title }: ConversationsSetTitleRouteInput) {
         const participant = await this.prisma.participant.findFirst({
             where: {
@@ -361,20 +360,13 @@ export class ConversationsGatewayService {
                 ban: null,
                 conversation: {
                     id: conversationId,
-                    OR: [
-                        {
-                            groupConversation: {
-                                isNot: undefined,
-                            },
-                        },
-                        // место под каналы
-                    ],
                 },
             },
             include: {
                 conversation: {
                     include: {
                         groupConversation: true,
+                        privateConversation: true,
                     },
                 },
             },
@@ -389,6 +381,10 @@ export class ConversationsGatewayService {
 
         const { conversation } = participant;
 
+        if (conversation.privateConversation) {
+            return 0;
+        }
+
         if (conversation.groupConversation) {
             await this.prisma.groupConversation.update({
                 where: {
@@ -400,8 +396,8 @@ export class ConversationsGatewayService {
             });
         }
 
-        await this.prisma.$transaction(async (tx) => {
-            const lastMessage = await tx.message.create({
+        const lastMessage = await this.prisma.$transaction(async (tx) => {
+            const message = await tx.message.create({
                 data: {
                     conversationId,
                     serviceMessage: {
@@ -418,7 +414,44 @@ export class ConversationsGatewayService {
                         },
                     },
                 },
+                include: {
+                    attachments: true,
+                    serviceMessage: {
+                        include: {
+                            serviceMessageConversationTitleChanged: true,
+                        },
+                    },
+                },
             });
+
+            await tx.conversation.update({
+                where: {
+                    id: conversation.id,
+                },
+                data: {
+                    lastMessageId: message.id,
+                },
+            });
+
+            return message;
+        });
+
+        return new ResponseDto({
+            code: 1,
+            response: new MessageDto({
+                id: lastMessage.id,
+                content: lastMessage.content,
+                conversationId: lastMessage.conversationId,
+                senderId: lastMessage.senderId,
+                pinned: lastMessage.pinned,
+                serviceMessage: new ServiceMessageDto({
+                    ...EMPTY_SERVICE_MESSAGE_DTO,
+                    type: lastMessage.serviceMessage.type,
+                    serviceMessageConversationTitleChanged:
+                        lastMessage.serviceMessage.serviceMessageConversationTitleChanged,
+                }),
+                attachments: lastMessage.attachments,
+            }),
         });
     }
 }
