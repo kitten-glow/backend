@@ -147,7 +147,8 @@ model ServiceMessageAddedToConversation {
     updatedAt DateTime @default(now())
     conversationId Int
     userId Int
-    byUserId Int
+    // null если по ссылке
+    byUserId Int?
 }
 
 model ServiceMessageRemovedFromConversation {

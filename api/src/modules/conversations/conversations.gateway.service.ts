@@ -22,6 +22,7 @@ import { ConversationsService } from './conversations.service';
 import { RequestException } from '../../common/exceptions/request.exception';
 import { UserDto } from '../users/users.dto';
 import { ResponseDto } from '../../common/dto/response.dto';
+import { DateTime } from 'luxon';
 
 @Injectable()
 export class ConversationsGatewayService {
@@ -349,6 +350,118 @@ export class ConversationsGatewayService {
                     },
                 },
             },
+        });
+
+        if (!link) {
+            return 0;
+        }
+
+        const { conversation } = link;
+
+        const participant = await this.prisma.participant.findUnique({
+            where: {
+                userId_conversationId: {
+                    userId: user.id,
+                    conversationId: conversation.id,
+                },
+            },
+            include: {
+                ban: true,
+            },
+        });
+
+        // я ненавижу такие конструкции, но по другому уже не хочу думать
+        //
+        // отсеиваем пользователей:
+        // а) уже в чате
+        // б) которых вышвырнули из чата
+        // в) отдыхают в русской бане
+        if (
+            participant?.status === ParticipantInStatus.IN ||
+            participant?.status === ParticipantInStatus.KICKED ||
+            DateTime.fromJSDate(participant?.ban?.expireDate).diffNow().toMillis() < 0
+        ) {
+            return 0;
+        }
+
+        const lastMessage = await this.prisma.$transaction(async (tx) => {
+            const message = await tx.message.create({
+                data: {
+                    conversationId: conversation.id,
+                    serviceMessage: {
+                        create: {
+                            type: ServiceMessageType.ADDED_TO_CONVERSATION,
+                            serviceMessageAddedToConversation: {
+                                create: {
+                                    conversationId: conversation.id,
+                                    userId: user.id,
+                                },
+                            },
+                        },
+                    },
+                },
+                include: {
+                    attachments: true,
+                    serviceMessage: {
+                        include: {
+                            serviceMessageAddedToConversation: true,
+                        },
+                    },
+                },
+            });
+
+            await tx.conversation.update({
+                where: {
+                    id: conversation.id,
+                },
+                data: {
+                    lastMessageId: message.id,
+                },
+            });
+
+            return message;
+        });
+
+        await this.prisma.participant.create({
+            data: {
+                userId: user.id,
+                conversationId: conversation.id,
+                joinedByLinkId: link.id,
+                lastSeenMessage: lastMessage.id,
+                groupConversationParticipant: {
+                    create: {
+                        groupConversationId: conversation.groupConversation.id,
+                    },
+                },
+            },
+        });
+
+        return new ResponseDto({
+            code: 1,
+            response: new ConversationDto({
+                id: conversation.id,
+                title: conversation.groupConversation.title,
+                unreadCount: 0,
+                groupConversation: link.conversation.groupConversation
+                    ? new GroupConversationDto({
+                          title: conversation.groupConversation.title,
+                      })
+                    : null,
+                lastMessage: new MessageDto({
+                    id: lastMessage.id,
+                    content: lastMessage.content,
+                    conversationId: lastMessage.conversationId,
+                    senderId: lastMessage.senderId,
+                    pinned: lastMessage.pinned,
+                    attachments: lastMessage.attachments,
+                    serviceMessage: lastMessage.serviceMessage
+                        ? new ServiceMessageDto({
+                              ...SERVICE_MESSAGE_INCLUDE_DATA,
+                              ...lastMessage.serviceMessage,
+                          })
+                        : null,
+                }),
+            }),
         });
     }
 
