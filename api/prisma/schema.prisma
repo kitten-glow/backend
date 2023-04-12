@@ -297,7 +297,7 @@ model GroupConversationParticipant {
     id Int @id @default(autoincrement())
     participantId Int @unique
     participant Participant @relation(fields: [participantId], references: [id])
-    groupConversationId Int @unique
+    groupConversationId Int
     groupConversation GroupConversation @relation(fields: [groupConversationId], references: [id])
 }
 
