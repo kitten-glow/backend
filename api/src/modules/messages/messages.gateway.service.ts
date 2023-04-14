@@ -70,7 +70,9 @@ export class MessagesGatewayService {
                 const newConversation = await this.prisma.conversation.create({
                     data: {
                         privateConversation: {
-                            create: {},
+                            create: {
+                                userIds: [user.id, userId],
+                            },
                         },
                     },
                     include: {
@@ -169,6 +171,7 @@ export class MessagesGatewayService {
             const message = await tx.message.create({
                 data: {
                     conversationId: conversation.id,
+                    senderId: user.id,
                     content,
                 },
                 include: {
@@ -286,6 +289,7 @@ export class MessagesGatewayService {
                     senderId: message.senderId,
                     pinned: message.pinned,
                     attachments: message.attachments,
+                    serviceMessage: message.serviceMessage,
                 });
             }),
         });

@@ -8,6 +8,7 @@ import { ParseBooleanPipe } from '../../common/pipes/parse-boolean.pipe';
 import { DefaultValuePipe } from '../../common/pipes/default-value.pipe';
 import { ApiTags } from '@nestjs/swagger';
 import { MessagesGatewayService } from './messages.gateway.service';
+import { RequiredPipe } from '../../common/pipes/required.pipe';
 
 @ApiTags('Messages')
 @UseGuards(AuthHttpGuard)
@@ -24,7 +25,7 @@ export class MessagesController {
         @Query('conversationId', ParseIntPipe)
         conversationId: number | undefined,
         @Query('userId', ParseIntPipe) userId: number | undefined,
-        @Query('content') content: string | undefined,
+        @Query('content', RequiredPipe) content: string,
         @Query('silent', ParseBooleanPipe, new DefaultValuePipe(false))
         silent: boolean,
     ) {

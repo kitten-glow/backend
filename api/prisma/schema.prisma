@@ -306,7 +306,7 @@ model PrivateConversationParticipant {
     id Int @id @default(autoincrement())
     participantId Int @unique
     participant Participant @relation(fields: [participantId], references: [id])
-    privateConversationId Int @unique
+    privateConversationId Int
     privateConversation PrivateConversation @relation(fields: [privateConversationId], references: [id])
 }
 
