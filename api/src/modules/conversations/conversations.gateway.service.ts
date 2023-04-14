@@ -337,7 +337,6 @@ export class ConversationsGatewayService {
         });
     }
 
-    // todo вообще ничего не сделано
     public async joinInviteLinkRoute({ user, inviteLink }: ConversationsJoinInviteLinkRouteInput) {
         const link = await this.prisma.conversationInviteLink.findUnique({
             where: {
