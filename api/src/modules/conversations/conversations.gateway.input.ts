@@ -32,3 +32,9 @@ export interface ConversationsSetTitleRouteInput extends UserRequiredGatewayRout
     conversationId: number;
     title: string;
 }
+
+export interface ConversationsGetParticipantsRouteInput extends UserRequiredGatewayRouteInput {
+    conversationId: number;
+    count: number;
+    offset: number;
+}

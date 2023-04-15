@@ -95,4 +95,19 @@ export class ConversationsController {
             title,
         });
     }
+
+    @Get('getParticipants')
+    public getParticipants(
+        @AuthUserHttp() user: User,
+        @Query('conversationId', ParseIntPipe, RequiredPipe) conversationId: number,
+        @Query('count', ParseIntPipe, new DefaultValuePipe(20)) count: number,
+        @Query('offset', ParseIntPipe, new DefaultValuePipe(0)) offset: number,
+    ) {
+        return this.conversationsGatewayService.getParticipantsRoute({
+            user,
+            conversationId,
+            count,
+            offset,
+        });
+    }
 }

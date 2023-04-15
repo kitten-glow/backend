@@ -3,6 +3,7 @@ import {
     ConversationsCreateGroupRouteInput,
     ConversationsCreateInviteLinkRouteInput,
     ConversationsGetListRouteInput,
+    ConversationsGetParticipantsRouteInput,
     ConversationsJoinInviteLinkRouteInput,
     ConversationsPreviewInviteLinkRouteInput,
     ConversationsSetTitleRouteInput,
@@ -13,6 +14,7 @@ import {
     ConversationDto,
     GroupConversationDto,
     InviteLinkDto,
+    ParticipantDto,
     PreviewInviteLinkDto,
     PrivateConversationDto,
 } from './conversations.dto';
@@ -563,6 +565,71 @@ export class ConversationsGatewayService {
                         lastMessage.serviceMessage.serviceMessageConversationTitleChanged,
                 }),
                 attachments: lastMessage.attachments,
+            }),
+        });
+    }
+
+    public async getParticipantsRoute({
+        user,
+        conversationId,
+        count,
+        offset,
+    }: ConversationsGetParticipantsRouteInput) {
+        const participant = await this.prisma.participant.findFirst({
+            where: {
+                userId: user.id,
+                status: ParticipantInStatus.IN,
+                ban: null,
+                conversation: {
+                    id: conversationId,
+                },
+            },
+            include: {
+                conversation: {
+                    include: {
+                        groupConversation: true,
+                        privateConversation: true,
+                    },
+                },
+            },
+        });
+
+        if (!participant) {
+            throw new RequestException({
+                code: -1,
+                message: 'Chat not found',
+            });
+        }
+
+        const participants = await this.prisma.participant.findMany({
+            where: {
+                conversationId,
+                status: ParticipantInStatus.IN,
+            },
+            skip: offset,
+            take: count,
+        });
+
+        const users = await this.prisma.user.findMany({
+            where: {
+                id: {
+                    in: participants.map((item) => item.userId),
+                },
+            },
+        });
+
+        return new ResponseDto({
+            code: 1,
+            response: participants.map((item) => {
+                const _user = users.find((_item) => _item.id === item.userId);
+
+                return new ParticipantDto({
+                    id: item.id,
+                    user: new UserDto({
+                        id: _user.id,
+                        username: _user.username,
+                    }),
+                });
             }),
         });
     }

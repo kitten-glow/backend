@@ -98,3 +98,16 @@ export class PreviewInviteLinkDto {
     @Expose()
     public membersCount: number;
 }
+
+export class ParticipantDto {
+    constructor(partial: ParticipantDto) {
+        Object.assign(this, partial);
+    }
+
+    @Expose()
+    public id: number;
+
+    @Expose()
+    @Type(() => UserDto)
+    public user: UserDto;
+}
