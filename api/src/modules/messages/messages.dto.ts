@@ -1,9 +1,7 @@
 import { Expose, Transform, TransformFnParams, Type } from 'class-transformer';
 import { ServiceMessage, ServiceMessageType } from '@prisma/client';
+import { ExcludeNull } from '../../common/decorators/transformer/exclude-null.decorator';
 
-export function ExcludeNull() {
-    return Transform(({ value }) => (value === null ? value?.trim() : value));
-}
 
 // можно использовать только тогда, когда в дто осознанно
 // добавляются специальные поля, и никакие другие больше не нужны

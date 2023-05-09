@@ -1,5 +1,4 @@
 import { Expose, Type } from 'class-transformer';
-import { ExcludeNull, MessageDto } from '../messages/messages.dto';
 import { UserDto } from '../users/users.dto';
 
 export class GroupConversationDto {
