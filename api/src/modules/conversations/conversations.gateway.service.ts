@@ -380,7 +380,7 @@ export class ConversationsGatewayService {
         if (
             participant?.status === ParticipantInStatus.IN ||
             participant?.status === ParticipantInStatus.KICKED ||
-            DateTime.fromJSDate(participant?.ban?.expireDate).diffNow().toMillis() < 0
+            participant?.ban
         ) {
             return 0;
         }

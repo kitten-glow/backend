@@ -6,9 +6,11 @@ import { PrismaModule } from './shared/prisma/prisma.module';
 import { ConversationsModule } from './modules/conversations/conversations.module';
 import { MessagesModule } from './modules/messages/messages.module';
 import { BullModule } from '@nestjs/bull';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
     imports: [
+        ScheduleModule.forRoot(),
         BullModule.forRoot({
             redis: {
                 host: 'redis',
