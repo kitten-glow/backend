@@ -10,7 +10,7 @@ datasource db {
 
 model User {
     id        Int       @id @default(autoincrement())
-    username  String    @unique() @db.VarChar(30)
+    username  String    @unique @db.VarChar(30)
     password  String    @db.VarChar(60)
     createdAt DateTime  @default(now())
     verified  Boolean   @default(false)
@@ -54,6 +54,7 @@ model GroupConversationPermissionsException {
     groupConversationId          Int
     groupConversationPermissions GroupConversationPermissions @relation(fields: [groupConversationId], references: [groupConversationId])
     sendTextMessages             Boolean                      @default(true)
+    changeGroupInfo              Boolean                      @default(true)
 
     @@unique([userId, groupConversationId])
 }
@@ -62,6 +63,7 @@ model GroupConversationPermissions {
     id                  Int                                     @id @default(autoincrement())
     exceptions          GroupConversationPermissionsException[]
     sendTextMessages    Boolean                                 @default(true)
+    changeGroupInfo     Boolean                                 @default(true)
     groupConversationId Int                                     @unique
     groupConversation   GroupConversation                       @relation(fields: [groupConversationId], references: [id])
 }
@@ -310,9 +312,12 @@ model GroupConversationParticipantAdmin {
     id                             Int                          @id @default(autoincrement())
     groupConversationParticipantId Int                          @unique
     groupConversationParticipant   GroupConversationParticipant @relation(fields: [groupConversationParticipantId], references: [id])
-    changeGroupInfo                Boolean
-    pinMessages                    Boolean
-    addNewAdmins                   Boolean
+    isOwner                        Boolean                      @default(false)
+    changeGroupInfo                Boolean                      @default(true)
+    editPermissions                Boolean                      @default(true)
+    pinMessages                    Boolean                      @default(true)
+    manageLinks                    Boolean                      @default(true)
+    addNewAdmins                   Boolean                      @default(true)
 }
 
 model GroupConversationParticipant {

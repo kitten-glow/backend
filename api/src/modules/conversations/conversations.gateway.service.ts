@@ -155,6 +155,9 @@ export class ConversationsGatewayService {
                 groupConversation: {
                     create: {
                         title,
+                        permissions: {
+                            create: {},
+                        },
                     },
                 },
             },
@@ -170,6 +173,11 @@ export class ConversationsGatewayService {
                 groupConversationParticipant: {
                     create: {
                         groupConversationId: conversation.groupConversation.id,
+                        admin: {
+                            create: {
+                                isOwner: true,
+                            },
+                        },
                     },
                 },
             },
@@ -380,7 +388,7 @@ export class ConversationsGatewayService {
         if (
             participant?.status === ParticipantInStatus.IN ||
             participant?.status === ParticipantInStatus.KICKED ||
-            participant?.ban
+            !!participant?.ban
         ) {
             return 0;
         }
