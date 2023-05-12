@@ -1,4 +1,5 @@
 import { Expose, Type } from 'class-transformer';
+import { MessageDto } from '../messages/messages.dto';
 import { UserDto } from '../users/users.dto';
 
 export class GroupConversationDto {
@@ -20,8 +21,6 @@ export class PrivateConversationDto {
 
     @Expose()
     public user: UserDto;
-
-    // public participants: string[];
 }
 
 export class ConversationDto {
@@ -109,4 +108,16 @@ export class ParticipantDto {
     @Expose()
     @Type(() => UserDto)
     public user: UserDto;
+}
+
+export class GroupConversationParticipantDto {
+    constructor(partial: GroupConversationParticipantDto) {
+        Object.assign(this, partial);
+    }
+
+    @Expose()
+    public id: number;
+
+    @Expose()
+    public title?: string;
 }
