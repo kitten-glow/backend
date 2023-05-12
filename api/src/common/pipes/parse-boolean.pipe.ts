@@ -7,9 +7,11 @@ export class ParseBooleanPipe implements PipeTransform {
         if (value === undefined) return;
 
         switch (value) {
-            case '1' || 'true':
+            case 'true':
+            case '1':
                 return true;
-            case '0' || 'false':
+            case 'false':
+            case '0':
                 return false;
             default:
                 return undefined;
