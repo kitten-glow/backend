@@ -96,6 +96,22 @@ export class ConversationsController {
         });
     }
 
+    @Get('editPermissions')
+    public editPermissions(
+        @AuthUserHttp() user: User,
+        @Query('conversationId', ParseIntPipe, RequiredPipe)
+        conversationId: number,
+        @Query('sendTextMessages', ParseBooleanPipe) sendTextMessages: boolean | undefined,
+        @Query('changeGroupInfo', ParseBooleanPipe) changeGroupInfo: boolean | undefined,
+    ) {
+        return this.conversationsGatewayService.editPermissionsRoute({
+            user,
+            conversationId,
+            sendTextMessages,
+            changeGroupInfo,
+        });
+    }
+
     @Get('getParticipants')
     public getParticipants(
         @AuthUserHttp() user: User,

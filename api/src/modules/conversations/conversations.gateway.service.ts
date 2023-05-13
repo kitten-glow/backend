@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import {
     ConversationsCreateGroupRouteInput,
     ConversationsCreateInviteLinkRouteInput,
+    ConversationsEditPermissionsRouteInput,
     ConversationsGetListRouteInput,
     ConversationsGetParticipantsRouteInput,
     ConversationsJoinInviteLinkRouteInput,
@@ -13,6 +14,7 @@ import { SERVICE_MESSAGE_INCLUDE_DATA } from '../../common/constants/service-mes
 import {
     ConversationDto,
     GroupConversationDto,
+    GroupConversationPermissionsDto,
     InviteLinkDto,
     ParticipantDto,
     PreviewInviteLinkDto,
@@ -574,6 +576,65 @@ export class ConversationsGatewayService {
                 }),
                 attachments: lastMessage.attachments,
             }),
+        });
+    }
+
+    public async editPermissionsRoute({
+        user,
+        conversationId,
+        sendTextMessages,
+        changeGroupInfo,
+    }: ConversationsEditPermissionsRouteInput) {
+        const participant = await this.prisma.participant.findFirst({
+            where: {
+                userId: user.id,
+                status: ParticipantInStatus.IN,
+                ban: null,
+                conversation: {
+                    id: conversationId,
+                },
+                groupConversationParticipant: {
+                    admin: {
+                        OR: [
+                            {
+                                isOwner: true,
+                            },
+                            {
+                                editPermissions: true,
+                            },
+                        ],
+                    },
+                },
+            },
+            include: {
+                conversation: {
+                    include: {
+                        groupConversation: true,
+                    },
+                },
+            },
+        });
+
+        if (!participant) {
+            throw new RequestException({
+                code: -1,
+                message: "Chat not found or you don't have permissions",
+            });
+        }
+
+        const updatedPermissions = await this.prisma.groupConversationPermissions.update({
+            where: {
+                groupConversationId: participant.conversation.groupConversation.id,
+            },
+            data: {
+                sendTextMessages,
+                changeGroupInfo,
+            },
+        });
+
+        return new GroupConversationPermissionsDto({
+            sendTextMessages: updatedPermissions.sendTextMessages,
+            changeGroupInfo: updatedPermissions.changeGroupInfo,
         });
     }
 

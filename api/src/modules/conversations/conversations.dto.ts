@@ -121,3 +121,15 @@ export class GroupConversationParticipantDto {
     @Expose()
     public title?: string;
 }
+
+export class GroupConversationPermissionsDto {
+    constructor(partial: GroupConversationPermissionsDto) {
+        Object.assign(this, partial);
+    }
+
+    @Expose()
+    public sendTextMessages: boolean;
+
+    @Expose()
+    public changeGroupInfo: boolean;
+}
