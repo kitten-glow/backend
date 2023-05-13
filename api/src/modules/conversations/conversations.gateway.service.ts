@@ -4,6 +4,7 @@ import {
     ConversationsCreateInviteLinkRouteInput,
     ConversationsEditPermissionsRouteInput,
     ConversationsGetListRouteInput,
+    ConversationsGetMyPermissionsRouteInput,
     ConversationsGetParticipantsRouteInput,
     ConversationsJoinInviteLinkRouteInput,
     ConversationsPreviewInviteLinkRouteInput,
@@ -576,6 +577,70 @@ export class ConversationsGatewayService {
                 }),
                 attachments: lastMessage.attachments,
             }),
+        });
+    }
+
+    // todo: вынести в отдельный тестируемый модуль
+    public async getMyPermissions({ user, conversationId }: ConversationsGetMyPermissionsRouteInput) {
+        const participant = await this.prisma.participant.findFirst({
+            where: {
+                userId: user.id,
+                status: ParticipantInStatus.IN,
+                ban: null,
+                conversation: {
+                    id: conversationId,
+                },
+            },
+            include: {
+                groupConversationParticipant: {
+                    include: {
+                        admin: true,
+                    },
+                },
+                conversation: {
+                    include: {
+                        groupConversation: {
+                            include: {
+                                permissions: {
+                                    include: {
+                                        exceptions: {
+                                            where: {
+                                                userId: user.id,
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        });
+
+        if (!participant) {
+            throw new RequestException({
+                code: -1,
+                message: 'Chat not found',
+            });
+        }
+
+        // роут важный. в чем суть:
+        //
+        // 1) проверяем сначала права админа. если true, то возвращаем его и
+        // дальше уже идти нет смысла.
+        // 2) смотрим пользователя с исключениями в правах, если исключение есть,
+        // то отдаем это важное значение. если исключений нет, то пошлепали дальше
+        // 3) просто уже даем значение из дефолтных прав пользователей в чате
+
+        return new GroupConversationPermissionsDto({
+            sendTextMessages:
+                !!participant.groupConversationParticipant.admin ||
+                (participant.conversation.groupConversation.permissions.exceptions[0]?.sendTextMessages ??
+                    participant.conversation.groupConversation.permissions.sendTextMessages),
+            changeGroupInfo:
+                participant.groupConversationParticipant.admin?.changeGroupInfo ||
+                (participant.conversation.groupConversation.permissions.exceptions[0]?.changeGroupInfo ??
+                    participant.conversation.groupConversation.permissions.changeGroupInfo),
         });
     }
 

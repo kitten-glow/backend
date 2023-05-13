@@ -96,6 +96,18 @@ export class ConversationsController {
         });
     }
 
+    @Get('getMyPermissions')
+    public getMyPermissions(
+        @AuthUserHttp() user: User,
+        @Query('conversationId', ParseIntPipe, RequiredPipe)
+        conversationId: number,
+    ) {
+        return this.conversationsGatewayService.getMyPermissions({
+            user,
+            conversationId,
+        });
+    }
+
     @Get('editPermissions')
     public editPermissions(
         @AuthUserHttp() user: User,
