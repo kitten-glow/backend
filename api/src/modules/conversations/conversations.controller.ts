@@ -10,6 +10,7 @@ import { RequiredPipe } from '../../common/pipes/required.pipe';
 import { ParseDatePipe } from '../../common/pipes/parse-date.pipe';
 import { IsDateFuturePipe } from '../../common/pipes/is-date-future.pipe';
 import { ConversationsGatewayService } from './conversations.gateway.service';
+import { IsConversationGuard } from '../../common/guards/is-conversation.guard';
 
 @ApiTags('Conversations')
 @UseGuards(AuthHttpGuard)
@@ -108,7 +109,8 @@ export class ConversationsController {
         });
     }
 
-    @Get('editPermissions')
+    @UseGuards(IsConversationGuard('group'))
+    @Get('permissions/update')
     public editPermissions(
         @AuthUserHttp() user: User,
         @Query('conversationId', ParseIntPipe, RequiredPipe)
@@ -116,7 +118,7 @@ export class ConversationsController {
         @Query('sendTextMessages', ParseBooleanPipe) sendTextMessages: boolean | undefined,
         @Query('changeGroupInfo', ParseBooleanPipe) changeGroupInfo: boolean | undefined,
     ) {
-        return this.conversationsGatewayService.editPermissionsRoute({
+        return this.conversationsGatewayService.updatePermissionsRoute({
             user,
             conversationId,
             sendTextMessages,

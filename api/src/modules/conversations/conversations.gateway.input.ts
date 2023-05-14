@@ -33,7 +33,7 @@ export interface ConversationsSetTitleRouteInput extends UserRequiredGatewayRout
     title: string;
 }
 
-export interface ConversationsEditPermissionsRouteInput extends UserRequiredGatewayRouteInput {
+export interface ConversationsUpdatePermissionsRouteInput extends UserRequiredGatewayRouteInput {
     conversationId: number;
     sendTextMessages: boolean | undefined;
     changeGroupInfo: boolean | undefined;

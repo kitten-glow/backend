@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import {
     ConversationsCreateGroupRouteInput,
     ConversationsCreateInviteLinkRouteInput,
-    ConversationsEditPermissionsRouteInput,
+    ConversationsUpdatePermissionsRouteInput,
     ConversationsGetListRouteInput,
     ConversationsGetMyPermissionsRouteInput,
     ConversationsGetParticipantsRouteInput,
@@ -644,20 +644,18 @@ export class ConversationsGatewayService {
         });
     }
 
-    public async editPermissionsRoute({
+    public async updatePermissionsRoute({
         user,
         conversationId,
         sendTextMessages,
         changeGroupInfo,
-    }: ConversationsEditPermissionsRouteInput) {
+    }: ConversationsUpdatePermissionsRouteInput) {
         const participant = await this.prisma.participant.findFirst({
             where: {
                 userId: user.id,
                 status: ParticipantInStatus.IN,
                 ban: null,
-                conversation: {
-                    id: conversationId,
-                },
+                conversationId,
                 groupConversationParticipant: {
                     admin: {
                         OR: [
@@ -687,9 +685,11 @@ export class ConversationsGatewayService {
             });
         }
 
+        const { conversation } = participant;
+
         const updatedPermissions = await this.prisma.groupConversationPermissions.update({
             where: {
-                groupConversationId: participant.conversation.groupConversation.id,
+                groupConversationId: conversation.groupConversation.id,
             },
             data: {
                 sendTextMessages,
