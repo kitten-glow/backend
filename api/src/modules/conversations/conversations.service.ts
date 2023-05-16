@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../shared/prisma/prisma.service';
+import { ParticipantInStatus, Prisma } from '@prisma/client';
 
 @Injectable()
 export class ConversationsService {
@@ -20,5 +21,71 @@ export class ConversationsService {
 
     public generateInviteLink() {
         return this.generateRandomString(13);
+    }
+
+    public async hasPermissionsInGroupConversation(
+        conversationId: number,
+        userId: number,
+        permissions: Prisma.GroupConversationParticipantAdminWhereInput,
+    ) {
+        const participant = await this.prisma.participant.findFirst({
+            where: {
+                userId,
+                status: ParticipantInStatus.IN,
+                ban: null,
+                conversationId,
+                // где-то уже расписана такая логика.
+                OR: [
+                    // сначала проверяем, вдруг админ наш пользователь
+                    {
+                        groupConversationParticipant: {
+                            admin: {
+                                OR: [
+                                    {
+                                        isOwner: true,
+                                    },
+                                    {
+                                        ...permissions,
+                                    },
+                                ],
+                            },
+                        },
+                    },
+                    // если нет, идем уже по другим правам
+                    {
+                        conversation: {
+                            groupConversation: {
+                                permissions: {
+                                    OR: [
+                                        // если вдруг наш пользователь есть в
+                                        // исключениях, смотрим это
+                                        {
+                                            exceptions: {
+                                                some: {
+                                                    userId,
+                                                    ...permissions,
+                                                },
+                                            },
+                                        },
+                                        // если в исключениях его нет, смотрим
+                                        // основные права в группе
+                                        {
+                                            exceptions: {
+                                                none: {
+                                                    userId,
+                                                },
+                                            },
+                                            ...permissions,
+                                        },
+                                    ],
+                                },
+                            },
+                        },
+                    },
+                ],
+            },
+        });
+
+        return !!participant;
     }
 }
