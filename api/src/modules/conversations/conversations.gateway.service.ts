@@ -9,6 +9,7 @@ import {
     ConversationsJoinInviteLinkRouteInput,
     ConversationsPreviewInviteLinkRouteInput,
     ConversationsSetTitleRouteInput,
+    ConversationsUpdatePermissionsExceptionRouteInput,
 } from './conversations.gateway.input';
 import { ParticipantInStatus, Prisma, ServiceMessageType } from '@prisma/client';
 import { SERVICE_MESSAGE_INCLUDE_DATA } from '../../common/constants/service-message-include-data.constant';
@@ -664,6 +665,82 @@ export class ConversationsGatewayService {
                 groupConversationId: conversation.groupConversation.id,
             },
             data: {
+                sendTextMessages,
+                changeGroupInfo,
+            },
+        });
+
+        return new GroupConversationPermissionsDto({
+            sendTextMessages: updatedPermissions.sendTextMessages,
+            changeGroupInfo: updatedPermissions.changeGroupInfo,
+        });
+    }
+
+    public async updatePermissionsExceptionRoute({
+        user,
+        conversationId,
+        userId,
+        sendTextMessages,
+        changeGroupInfo,
+    }: ConversationsUpdatePermissionsExceptionRouteInput) {
+        const editParticipant = await this.prisma.participant.findFirst({
+            where: {
+                userId,
+                conversationId,
+                status: ParticipantInStatus.IN,
+                ban: null,
+                groupConversationParticipant: {
+                    admin: null,
+                },
+            },
+            include: {
+                conversation: {
+                    include: {
+                        groupConversation: true,
+                    },
+                },
+                groupConversationParticipant: {
+                    include: {
+                        admin: {
+                            select: {
+                                id: true,
+                            },
+                        },
+                    },
+                },
+            },
+        });
+
+        const { conversation } = editParticipant;
+
+        if (!editParticipant) {
+            throw new RequestException({
+                code: -2,
+                message: 'User to update not found',
+            });
+        }
+
+        if (editParticipant.groupConversationParticipant.admin) {
+            throw new RequestException({
+                code: -3,
+                message: 'You can\'t update permissions for admin',
+            });
+        }
+
+        const updatedPermissions = await this.prisma.groupConversationPermissionsException.upsert({
+            where: {
+                userId_groupConversationId: {
+                    userId,
+                    groupConversationId: conversation.groupConversation.id,
+                },
+            },
+            update: {
+                sendTextMessages,
+                changeGroupInfo,
+            },
+            create: {
+                userId,
+                groupConversationId: conversation.groupConversation.id,
                 sendTextMessages,
                 changeGroupInfo,
             },

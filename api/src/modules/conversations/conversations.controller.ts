@@ -128,6 +128,27 @@ export class ConversationsController {
         });
     }
 
+    @UseGuards(PermissionsInGroupConversationGuard({ editPermissions: true }))
+    @UseGuards(IsConversationGuard('group'))
+    @Get('permissions/exception/update')
+    public updatePermissionsException(
+        @AuthUserHttp() user: User,
+        @Query('userId', ParseIntPipe, RequiredPipe)
+            userId: number,
+        @Query('conversationId', ParseIntPipe, RequiredPipe)
+            conversationId: number,
+        @Query('sendTextMessages', ParseBooleanPipe) sendTextMessages: boolean | undefined,
+        @Query('changeGroupInfo', ParseBooleanPipe) changeGroupInfo: boolean | undefined,
+    ) {
+        return this.conversationsGatewayService.updatePermissionsExceptionRoute({
+            user,
+            userId,
+            conversationId,
+            sendTextMessages,
+            changeGroupInfo,
+        });
+    }
+
     @Get('getParticipants')
     public getParticipants(
         @AuthUserHttp() user: User,

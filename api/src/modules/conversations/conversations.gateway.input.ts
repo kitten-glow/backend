@@ -39,6 +39,13 @@ export interface ConversationsUpdatePermissionsRouteInput extends UserRequiredGa
     changeGroupInfo: boolean | undefined;
 }
 
+export interface ConversationsUpdatePermissionsExceptionRouteInput extends UserRequiredGatewayRouteInput {
+    conversationId: number;
+    userId: number;
+    sendTextMessages: boolean | undefined;
+    changeGroupInfo: boolean | undefined;
+}
+
 export interface ConversationsGetMyPermissionsRouteInput extends UserRequiredGatewayRouteInput {
     conversationId: number;
 }
