@@ -650,42 +650,14 @@ export class ConversationsGatewayService {
         sendTextMessages,
         changeGroupInfo,
     }: ConversationsUpdatePermissionsRouteInput) {
-        const participant = await this.prisma.participant.findFirst({
+        const conversation = await this.prisma.conversation.findUnique({
             where: {
-                userId: user.id,
-                status: ParticipantInStatus.IN,
-                ban: null,
-                conversationId,
-                groupConversationParticipant: {
-                    admin: {
-                        OR: [
-                            {
-                                isOwner: true,
-                            },
-                            {
-                                editPermissions: true,
-                            },
-                        ],
-                    },
-                },
+                id: conversationId,
             },
             include: {
-                conversation: {
-                    include: {
-                        groupConversation: true,
-                    },
-                },
+                groupConversation: true,
             },
         });
-
-        if (!participant) {
-            throw new RequestException({
-                code: -1,
-                message: "Chat not found or you don't have permissions",
-            });
-        }
-
-        const { conversation } = participant;
 
         const updatedPermissions = await this.prisma.groupConversationPermissions.update({
             where: {

@@ -11,6 +11,7 @@ import { ParseDatePipe } from '../../common/pipes/parse-date.pipe';
 import { IsDateFuturePipe } from '../../common/pipes/is-date-future.pipe';
 import { ConversationsGatewayService } from './conversations.gateway.service';
 import { IsConversationGuard } from '../../common/guards/is-conversation.guard';
+import { PermissionsInGroupConversationGuard } from '../../common/guards/permissions-in-group-conversation.guard';
 
 @ApiTags('Conversations')
 @UseGuards(AuthHttpGuard)
@@ -109,6 +110,7 @@ export class ConversationsController {
         });
     }
 
+    @UseGuards(PermissionsInGroupConversationGuard({ editPermissions: true }))
     @UseGuards(IsConversationGuard('group'))
     @Get('permissions/update')
     public editPermissions(
