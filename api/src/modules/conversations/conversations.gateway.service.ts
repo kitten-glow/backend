@@ -39,23 +39,18 @@ export class ConversationsGatewayService {
 
     public async getListRoute({ user, count, offset }: ConversationsGetListRouteInput) {
         const participants = await this.prisma.$queryRaw<{ conversationId: number; unreadCount: number }[]>`
-            SELECT 
-                "conversationId",
-                "lastSeenMessage",
-                (
-                    SELECT COUNT(1)::int AS "unreadCount"
+            SELECT "conversationId",
+                   "lastSeenMessage",
+                   (SELECT COUNT(1) ::int AS "unreadCount"
                     FROM "Message" "_message"
                     WHERE "_message"."id" > "lastSeenMessage"
-                    AND "_message"."conversationId" = "_participant"."conversationId"
-                ) AS "unreadCount"
+                      AND "_message"."conversationId" = "_participant"."conversationId") AS "unreadCount"
             FROM "Participant" AS "_participant"
-            WHERE "userId" = ${user.id} 
-                AND "_participant"."status" = '${Prisma.raw(ParticipantInStatus.IN)}' 
-                AND NOT EXISTS (
-                    SELECT 1
-                    FROM "ParticipantBan" "_participantBan"
-                    WHERE "_participantBan"."id" = "_participant"."id"
-                )
+            WHERE "userId" = ${user.id}
+              AND "_participant"."status" = '${Prisma.raw(ParticipantInStatus.IN)}'
+              AND NOT EXISTS (SELECT 1
+                              FROM "ParticipantBan" "_participantBan"
+                              WHERE "_participantBan"."id" = "_participant"."id")
         `;
 
         const conversations = await this.prisma.conversation.findMany({
