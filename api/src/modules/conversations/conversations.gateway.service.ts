@@ -718,7 +718,7 @@ export class ConversationsGatewayService {
         if (editParticipant.groupConversationParticipant.admin) {
             throw new RequestException({
                 code: -3,
-                message: 'You can\'t update permissions for admin',
+                message: "You can't update permissions for admin",
             });
         }
 

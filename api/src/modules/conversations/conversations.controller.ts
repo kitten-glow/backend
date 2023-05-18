@@ -134,9 +134,9 @@ export class ConversationsController {
     public updatePermissionsException(
         @AuthUserHttp() user: User,
         @Query('userId', ParseIntPipe, RequiredPipe)
-            userId: number,
+        userId: number,
         @Query('conversationId', ParseIntPipe, RequiredPipe)
-            conversationId: number,
+        conversationId: number,
         @Query('sendTextMessages', ParseBooleanPipe) sendTextMessages: boolean | undefined,
         @Query('changeGroupInfo', ParseBooleanPipe) changeGroupInfo: boolean | undefined,
     ) {
