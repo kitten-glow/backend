@@ -149,6 +149,22 @@ export class ConversationsController {
         });
     }
 
+    @UseGuards(PermissionsInGroupConversationGuard({ editPermissions: true }))
+    @UseGuards(IsConversationGuard('group'))
+    @Get('permissions/exception/remove')
+    public removePermissionsException(
+        @AuthUserHttp() user: User,
+        @Query('userId', ParseIntPipe, RequiredPipe)
+        userId: number,
+        @Query('conversationId', ParseIntPipe, RequiredPipe)
+        conversationId: number,
+    ) {
+        return this.conversationsGatewayService.removePermissionsExceptionRoute({
+            user,
+            userId,
+            conversationId,
+        });
+    }
     @Get('getParticipants')
     public getParticipants(
         @AuthUserHttp() user: User,

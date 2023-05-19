@@ -10,6 +10,7 @@ import {
     ConversationsPreviewInviteLinkRouteInput,
     ConversationsSetTitleRouteInput,
     ConversationsUpdatePermissionsExceptionRouteInput,
+    ConversationsRemovePermissionsExceptionRouteInput,
 } from './conversations.gateway.input';
 import { ParticipantInStatus, Prisma, ServiceMessageType } from '@prisma/client';
 import { SERVICE_MESSAGE_INCLUDE_DATA } from '../../common/constants/service-message-include-data.constant';
@@ -744,6 +745,61 @@ export class ConversationsGatewayService {
         return new GroupConversationPermissionsDto({
             sendTextMessages: updatedPermissions.sendTextMessages,
             changeGroupInfo: updatedPermissions.changeGroupInfo,
+        });
+    }
+
+    public async removePermissionsExceptionRoute({
+        user,
+        conversationId,
+        userId,
+    }: ConversationsRemovePermissionsExceptionRouteInput) {
+        const participantToRemove = await this.prisma.participant.findFirst({
+            where: {
+                userId,
+                conversationId,
+                status: ParticipantInStatus.IN,
+                ban: null,
+                groupConversationParticipant: {
+                    admin: null,
+                    groupConversation: {
+                        permissions: {
+                            exceptions: {
+                                some: {
+                                    userId,
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+            include: {
+                groupConversationParticipant: {
+                    select: {
+                        groupConversationId: true,
+                    },
+                },
+            },
+        });
+
+        if (!participantToRemove) {
+            throw new RequestException({
+                code: -1,
+                message: 'User to delete not found',
+            });
+        }
+
+        await this.prisma.groupConversationPermissionsException.delete({
+            where: {
+                userId_groupConversationId: {
+                    userId,
+                    groupConversationId: participantToRemove.groupConversationParticipant.groupConversationId,
+                },
+            },
+        });
+
+        return new ResponseDto({
+            code: 1,
+            response: true,
         });
     }
 
