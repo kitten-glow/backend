@@ -26,7 +26,7 @@ export class ConversationsService {
     public async hasPermissionsInGroupConversation(
         conversationId: number,
         userId: number,
-        permissions: Prisma.GroupConversationParticipantAdminWhereInput,
+        permissions: Prisma.GroupConversationPermissionsWhereInput & Prisma.GroupConversationParticipantAdminWhereInput,
     ) {
         const participant = await this.prisma.participant.findFirst({
             where: {
@@ -34,26 +34,27 @@ export class ConversationsService {
                 status: ParticipantInStatus.IN,
                 ban: null,
                 conversationId,
-                // где-то уже расписана такая логика.
-                OR: [
-                    // сначала проверяем, вдруг админ наш пользователь
-                    {
-                        groupConversationParticipant: {
+                groupConversationParticipant: {
+                    OR: [
+                        // сначала проверяем, вдруг админ наш пользователь
+                        {
                             admin: {
                                 OR: [
                                     {
                                         isOwner: true,
                                     },
                                     {
-                                        ...permissions,
+                                        changeGroupInfo: permissions.changeGroupInfo,
+                                        editPermissions: permissions.editPermissions,
+                                        pinMessages: permissions.pinMessages,
+                                        manageLinks: permissions.manageLinks,
+                                        addNewAdmins: permissions.addNewAdmins,
                                     },
                                 ],
                             },
                         },
-                    },
-                    // если нет, идем уже по другим правам
-                    {
-                        conversation: {
+                        // если нет, идем уже по другим правам
+                        {
                             groupConversation: {
                                 permissions: {
                                     OR: [
@@ -63,7 +64,8 @@ export class ConversationsService {
                                             exceptions: {
                                                 some: {
                                                     userId,
-                                                    ...permissions,
+                                                    sendTextMessages: permissions.sendTextMessages,
+                                                    changeGroupInfo: permissions.changeGroupInfo,
                                                 },
                                             },
                                         },
@@ -75,14 +77,15 @@ export class ConversationsService {
                                                     userId,
                                                 },
                                             },
-                                            ...permissions,
+                                            sendTextMessages: permissions.sendTextMessages,
+                                            changeGroupInfo: permissions.changeGroupInfo,
                                         },
                                     ],
                                 },
-                            },
+                            }
                         },
-                    },
-                ],
+                    ],
+                },
             },
         });
 
