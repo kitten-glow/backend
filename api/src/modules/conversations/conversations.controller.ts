@@ -128,8 +128,8 @@ export class ConversationsController {
         });
     }
 
-    @UseGuards(PermissionsInGroupConversationGuard({ editPermissions: true }))
     @UseGuards(IsConversationGuard('group'))
+    @UseGuards(PermissionsInGroupConversationGuard({ editPermissions: true }))
     @Get('permissions/exception/update')
     public updatePermissionsException(
         @AuthUserHttp() user: User,
@@ -149,8 +149,8 @@ export class ConversationsController {
         });
     }
 
-    @UseGuards(PermissionsInGroupConversationGuard({ editPermissions: true }))
     @UseGuards(IsConversationGuard('group'))
+    @UseGuards(PermissionsInGroupConversationGuard({ editPermissions: true }))
     @Get('permissions/exception/remove')
     public removePermissionsException(
         @AuthUserHttp() user: User,
