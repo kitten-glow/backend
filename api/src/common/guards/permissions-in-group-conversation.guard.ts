@@ -4,7 +4,8 @@ import { ConversationsService } from '../../modules/conversations/conversations.
 import { Prisma } from '@prisma/client';
 
 export const PermissionsInGroupConversationGuard = (
-    permissions: Prisma.GroupConversationPermissionsWhereInput & Prisma.GroupConversationParticipantAdminWhereInput,
+    permissions: Prisma.GroupConversationPermissionsWhereInput &
+        Prisma.GroupConversationParticipantAdminWhereInput,
 ) => {
     @Injectable()
     class PermissionsInGroupConversationGuardMixin implements CanActivate {

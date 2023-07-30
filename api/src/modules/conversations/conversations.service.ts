@@ -11,6 +11,7 @@ export class ConversationsService {
         charSet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789',
     ) {
         let randomString = '';
+
         for (let i = 0; i < length; i++) {
             const randomPoz = Math.floor(Math.random() * charSet.length);
             randomString += charSet.substring(randomPoz, randomPoz + 1);
@@ -26,7 +27,8 @@ export class ConversationsService {
     public async hasPermissionsInGroupConversation(
         conversationId: number,
         userId: number,
-        permissions: Prisma.GroupConversationPermissionsWhereInput & Prisma.GroupConversationParticipantAdminWhereInput,
+        permissions: Prisma.GroupConversationPermissionsWhereInput &
+            Prisma.GroupConversationParticipantAdminWhereInput,
     ) {
         const participant = await this.prisma.participant.findFirst({
             where: {
@@ -82,7 +84,7 @@ export class ConversationsService {
                                         },
                                     ],
                                 },
-                            }
+                            },
                         },
                     ],
                 },
