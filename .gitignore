@@ -36,3 +36,5 @@ lerna-debug.log*
 
 /letsencrypt
 .env
+
+api/prisma/migrations

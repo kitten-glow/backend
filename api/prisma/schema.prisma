@@ -3,14 +3,14 @@ generator client {
 }
 
 datasource db {
-    provider = "postgresql"
-    url      = env("POSTGRES_DATABASE_URL")
+    provider = "cockroachdb"
+    url      = env("CRDB_DATABASE_URL")
 }
 
 model User {
-    id        Int       @id @default(autoincrement())
-    username  String    @unique @db.VarChar(30)
-    password  String    @db.VarChar(60)
+    id        Int       @id @default(sequence())
+    username  String    @unique
+    password  String
     createdAt DateTime  @default(now())
     verified  Boolean   @default(false)
     contacts  Contact[]
@@ -18,7 +18,7 @@ model User {
 }
 
 model Contact {
-    id     Int    @id @default(autoincrement())
+    id     Int    @id @default(sequence())
     userId Int
     user   User   @relation(fields: [userId], references: [id])
     phone  String
@@ -28,8 +28,8 @@ model Contact {
 }
 
 model Token {
-    id          Int      @id @default(autoincrement())
-    token       String   @unique @db.VarChar(90)
+    id          Int      @id @default(sequence())
+    token       String   @unique
     userId      Int
     user        User     @relation(fields: [userId], references: [id])
     generatedAt DateTime @default(now())
@@ -37,7 +37,7 @@ model Token {
 }
 
 model Conversation {
-    id                  Int                      @id @default(autoincrement())
+    id                  Int                      @id @default(sequence())
     groupConversation   GroupConversation?
     privateConversation PrivateConversation?
     participants        Participant[]
@@ -48,7 +48,7 @@ model Conversation {
 }
 
 model GroupConversationPermissionsException {
-    id                           Int                          @id @default(autoincrement())
+    id                           Int                          @id @default(sequence())
     userId                       Int
     groupConversationId          Int
     groupConversationPermissions GroupConversationPermissions @relation(fields: [groupConversationId], references: [groupConversationId])
@@ -59,7 +59,7 @@ model GroupConversationPermissionsException {
 }
 
 model GroupConversationPermissions {
-    id                  Int                                     @id @default(autoincrement())
+    id                  Int                                     @id @default(sequence())
     exceptions          GroupConversationPermissionsException[]
     sendTextMessages    Boolean                                 @default(true)
     changeGroupInfo     Boolean                                 @default(true)
@@ -68,11 +68,11 @@ model GroupConversationPermissions {
 }
 
 model GroupConversation {
-    id             Int                            @id @default(autoincrement())
+    id             Int                            @id @default(sequence())
     conversationId Int                            @unique
     conversation   Conversation                   @relation(fields: [conversationId], references: [id])
-    title          String                         @db.VarChar(30)
-    info           String                         @default("") @db.VarChar(30)
+    title          String
+    info           String                         @default("")
     createdAt      DateTime                       @default(now())
     updatedAt      DateTime                       @updatedAt
     permissions    GroupConversationPermissions?
@@ -80,7 +80,7 @@ model GroupConversation {
 }
 
 model PrivateConversation {
-    id             Int                              @id @default(autoincrement())
+    id             Int                              @id @default(sequence())
     conversationId Int                              @unique
     conversation   Conversation                     @relation(fields: [conversationId], references: [id])
     createdAt      DateTime                         @default(now())
@@ -90,16 +90,16 @@ model PrivateConversation {
 }
 
 model MessageReaction {
-    id        Int     @id @default(autoincrement())
+    id        Int     @id @default(sequence())
     messageId Int
     message   Message @relation(fields: [messageId], references: [id])
     userId    Int
-    reaction  String  @db.VarChar(30)
+    reaction  String
 }
 
 model Message {
-    id             Int                 @id @default(autoincrement())
-    content        String?             @db.VarChar(1000)
+    id             Int                 @id @default(sequence())
+    content        String?
     createdAt      DateTime            @default(now())
     updatedAt      DateTime            @default(now())
     conversationId Int
@@ -127,7 +127,7 @@ enum ServiceMessageType {
 }
 
 model ServiceMessage {
-    id                                       Int                                       @id @default(autoincrement())
+    id                                       Int                                       @id @default(sequence())
     messageId                                Int                                       @unique
     message                                  Message                                   @relation(fields: [messageId], references: [id])
     type                                     ServiceMessageType
@@ -143,7 +143,7 @@ model ServiceMessage {
 }
 
 model ServiceMessageLeftConversation {
-    id               Int            @id @default(autoincrement())
+    id               Int            @id @default(sequence())
     serviceMessageId Int            @unique
     serviceMessage   ServiceMessage @relation(fields: [serviceMessageId], references: [id])
     createdAt        DateTime       @default(now())
@@ -153,7 +153,7 @@ model ServiceMessageLeftConversation {
 }
 
 model ServiceMessageAddedToConversation {
-    id               Int            @id @default(autoincrement())
+    id               Int            @id @default(sequence())
     serviceMessageId Int            @unique
     serviceMessage   ServiceMessage @relation(fields: [serviceMessageId], references: [id])
     createdAt        DateTime       @default(now())
@@ -165,7 +165,7 @@ model ServiceMessageAddedToConversation {
 }
 
 model ServiceMessageRemovedFromConversation {
-    id               Int            @id @default(autoincrement())
+    id               Int            @id @default(sequence())
     serviceMessageId Int            @unique
     serviceMessage   ServiceMessage @relation(fields: [serviceMessageId], references: [id])
     createdAt        DateTime       @default(now())
@@ -176,31 +176,31 @@ model ServiceMessageRemovedFromConversation {
 }
 
 model ServiceMessageConversationTitleChanged {
-    id               Int            @id @default(autoincrement())
+    id               Int            @id @default(sequence())
     serviceMessageId Int            @unique
     serviceMessage   ServiceMessage @relation(fields: [serviceMessageId], references: [id])
     createdAt        DateTime       @default(now())
     updatedAt        DateTime       @default(now())
     conversationId   Int
-    oldTitle         String         @db.VarChar(30)
-    title            String         @db.VarChar(30)
+    oldTitle         String
+    title            String
     byUserId         Int
 }
 
 model ServiceMessageConversationAvatarChanged {
-    id               Int            @id @default(autoincrement())
+    id               Int            @id @default(sequence())
     serviceMessageId Int            @unique
     serviceMessage   ServiceMessage @relation(fields: [serviceMessageId], references: [id])
     createdAt        DateTime       @default(now())
     updatedAt        DateTime       @default(now())
     conversationId   Int
-    oldAvatarUrl     String         @db.VarChar(1000)
-    avatarUrl        String         @db.VarChar(1000)
+    oldAvatarUrl     String
+    avatarUrl        String
     byUserId         Int
 }
 
 model ServiceMessageConversationHistoryCleared {
-    id               Int            @id @default(autoincrement())
+    id               Int            @id @default(sequence())
     serviceMessageId Int            @unique
     serviceMessage   ServiceMessage @relation(fields: [serviceMessageId], references: [id])
     createdAt        DateTime       @default(now())
@@ -210,7 +210,7 @@ model ServiceMessageConversationHistoryCleared {
 }
 
 model ServiceMessageConversationCreated {
-    id               Int            @id @default(autoincrement())
+    id               Int            @id @default(sequence())
     serviceMessageId Int            @unique
     serviceMessage   ServiceMessage @relation(fields: [serviceMessageId], references: [id])
     createdAt        DateTime       @default(now())
@@ -219,7 +219,7 @@ model ServiceMessageConversationCreated {
 }
 
 model ServiceMessagePinned {
-    id               Int            @id @default(autoincrement())
+    id               Int            @id @default(sequence())
     serviceMessageId Int            @unique
     serviceMessage   ServiceMessage @relation(fields: [serviceMessageId], references: [id])
     createdAt        DateTime       @default(now())
@@ -229,7 +229,7 @@ model ServiceMessagePinned {
 }
 
 model ServiceMessageUnpinned {
-    id               Int            @id @default(autoincrement())
+    id               Int            @id @default(sequence())
     serviceMessageId Int            @unique
     serviceMessage   ServiceMessage @relation(fields: [serviceMessageId], references: [id])
     createdAt        DateTime       @default(now())
@@ -239,7 +239,7 @@ model ServiceMessageUnpinned {
 }
 
 model MessageAttachment {
-    id        Int     @id @default(autoincrement())
+    id        Int     @id @default(sequence())
     messageId Int     @unique
     message   Message @relation(fields: [messageId], references: [id])
     video     Video?
@@ -249,31 +249,31 @@ model MessageAttachment {
 }
 
 model Video {
-    id                  Int               @id @default(autoincrement())
+    id                  Int               @id @default(sequence())
     messageAttachmentId Int               @unique
     messageAttachment   MessageAttachment @relation(fields: [messageAttachmentId], references: [id])
 }
 
 model Image {
-    id                  Int               @id @default(autoincrement())
+    id                  Int               @id @default(sequence())
     messageAttachmentId Int               @unique
     messageAttachment   MessageAttachment @relation(fields: [messageAttachmentId], references: [id])
 }
 
 model Audio {
-    id                  Int               @id @default(autoincrement())
+    id                  Int               @id @default(sequence())
     messageAttachmentId Int               @unique
     messageAttachment   MessageAttachment @relation(fields: [messageAttachmentId], references: [id])
 }
 
 model File {
-    id                  Int               @id @default(autoincrement())
+    id                  Int               @id @default(sequence())
     messageAttachmentId Int               @unique
     messageAttachment   MessageAttachment @relation(fields: [messageAttachmentId], references: [id])
 }
 
 model ParticipantBan {
-    id            Int          @id @default(autoincrement())
+    id            Int          @id @default(sequence())
     userId        Int
     participantId Int?         @unique
     participant   Participant? @relation(fields: [participantId], references: [id])
@@ -285,7 +285,7 @@ model ParticipantBan {
 }
 
 model Participant {
-    id                             Int                             @id @default(autoincrement())
+    id                             Int                             @id @default(sequence())
     userId                         Int
     conversationId                 Int
     conversation                   Conversation                    @relation(fields: [conversationId], references: [id])
@@ -308,7 +308,7 @@ enum ParticipantInStatus {
 }
 
 model GroupConversationParticipantAdmin {
-    id                             Int                          @id @default(autoincrement())
+    id                             Int                          @id @default(sequence())
     groupConversationParticipantId Int                          @unique
     groupConversationParticipant   GroupConversationParticipant @relation(fields: [groupConversationParticipantId], references: [id])
     isOwner                        Boolean                      @default(false)
@@ -320,17 +320,17 @@ model GroupConversationParticipantAdmin {
 }
 
 model GroupConversationParticipant {
-    id                  Int                                @id @default(autoincrement())
+    id                  Int                                @id @default(sequence())
     participantId       Int                                @unique
     participant         Participant                        @relation(fields: [participantId], references: [id])
-    title               String?                            @db.VarChar(30)
+    title               String?
     admin               GroupConversationParticipantAdmin?
     groupConversationId Int
     groupConversation   GroupConversation                  @relation(fields: [groupConversationId], references: [id])
 }
 
 model PrivateConversationParticipant {
-    id                    Int                 @id @default(autoincrement())
+    id                    Int                 @id @default(sequence())
     participantId         Int                 @unique
     participant           Participant         @relation(fields: [participantId], references: [id])
     privateConversationId Int
@@ -338,7 +338,7 @@ model PrivateConversationParticipant {
 }
 
 model ConversationInviteLink {
-    id               Int           @id @default(autoincrement())
+    id               Int           @id @default(sequence())
     conversationId   Int
     conversation     Conversation? @relation(fields: [conversationId], references: [id])
     createdBy        Int

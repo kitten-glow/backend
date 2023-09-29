@@ -26,7 +26,7 @@ services:
       - /api/dist
     depends_on:
       - redis
-      - postgres
+      - crdb
 
   redis:
     image: redis:7-alpine
@@ -40,27 +40,39 @@ services:
     volumes:
       - redis_data:/data
 
-  postgres:
-    image: postgres:14-alpine
-    restart: always
-    hostname: postgres
+  # postgres:
+  #   image: postgres:14-alpine
+  #   restart: always
+  #   hostname: postgres
+  #   networks:
+  #     - backend
+  #   ports:
+  #     - "5432:5432"
+  #   env_file:
+  #     - .env
+  #   environment:
+  #     POSTGRES_USER: ${POSTGRES_DB_USERNAME}
+  #     POSTGRES_PASSWORD: ${POSTGRES_DB_PASSWORD}
+  #     POSTGRES_DB: ${POSTGRES_DB_NAME}
+  #     PG_DATA: /var/lib/postgresql/data
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+
+  crdb:
+    image: cockroachdb/cockroach:v23.1.10
+    ports:
+      - "8080:8080"
+    hostname: crdb
     networks:
       - backend
-    ports:
-      - "5432:5432"
-    env_file:
-      - .env
-    environment:
-      POSTGRES_USER: ${POSTGRES_DB_USERNAME}
-      POSTGRES_PASSWORD: ${POSTGRES_DB_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB_NAME}
-      PG_DATA: /var/lib/postgresql/data
+    command: start-single-node --insecure
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - crdb_data:/cockroach/cockroach-data
 
 networks:
   backend:
 
 volumes:
   postgres_data:
+  crdb_data:
   redis_data:
