@@ -165,6 +165,7 @@ export class ConversationsController {
             conversationId,
         });
     }
+
     @Get('getParticipants')
     public getParticipants(
         @AuthUserHttp() user: User,
@@ -177,6 +178,24 @@ export class ConversationsController {
             conversationId,
             count,
             offset,
+        });
+    }
+
+    @Get('removeParticipant')
+    public removeParticipant(
+        @AuthUserHttp() user: User,
+        @Query('conversationId', ParseIntPipe, RequiredPipe) conversationId: number,
+        @Query('userId', ParseIntPipe, RequiredPipe) userId: number,
+        @Query('reason') reason: string,
+        @Query('notifyUser', ParseBooleanPipe, new DefaultValuePipe(false)) notifyUser: boolean,
+    ) {
+        return this.conversationsGatewayService.removeParticipantRoute({
+            user,
+            conversationId,
+            userId,
+            // todo сделать оповещение участников
+            // reason,
+            // notifyUser,
         });
     }
 }

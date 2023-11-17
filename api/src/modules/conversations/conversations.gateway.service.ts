@@ -11,6 +11,7 @@ import {
     ConversationsSetTitleRouteInput,
     ConversationsUpdatePermissionsExceptionRouteInput,
     ConversationsRemovePermissionsExceptionRouteInput,
+    ConversationsRemoveParticipantRouteInput,
 } from './conversations.gateway.input';
 import { ParticipantInStatus, Prisma, ServiceMessageType } from '@prisma/client';
 import { SERVICE_MESSAGE_INCLUDE_DATA } from '../../common/constants/service-message-include-data.constant';
@@ -865,6 +866,129 @@ export class ConversationsGatewayService {
                     }),
                 });
             }),
+        });
+    }
+
+    public async removeParticipantRoute({
+        user,
+        conversationId,
+        userId,
+    }: ConversationsRemoveParticipantRouteInput) {
+        const participant = await this.prisma.participant.findFirst({
+            where: {
+                userId: user.id,
+                status: ParticipantInStatus.IN,
+                ban: null,
+                groupConversationParticipant: {
+                    admin: {
+                        OR: [
+                            {
+                                isOwner: true,
+                            },
+                            {
+                                removeParticipants: true,
+                            },
+                        ],
+                    },
+                },
+                conversation: {
+                    id: conversationId,
+                },
+            },
+            include: {
+                groupConversationParticipant: {
+                    include: {
+                        admin: true,
+                    },
+                },
+            },
+        });
+
+        if (!participant) {
+            throw new RequestException({
+                code: -1,
+                message: 'Chat not found or you havent rights',
+            });
+        }
+
+        const participantToRemove = await this.prisma.participant.findFirst({
+            where: {
+                userId: userId,
+                status: ParticipantInStatus.IN,
+                ban: null,
+                groupConversationParticipant: {
+                    admin: {
+                        NOT: {
+                            isOwner: true,
+                        },
+                    },
+                },
+                conversation: {
+                    id: conversationId,
+                },
+            },
+            include: {
+                groupConversationParticipant: {
+                    include: {
+                        admin: true,
+                    },
+                },
+            },
+        });
+
+        if (!participantToRemove) {
+            throw new RequestException({
+                code: -2,
+                message: 'User not found or its owner',
+            });
+        }
+
+        // в запросе выше мы уже проверяем, что перед нами админ. сейчас этого делать не нужно
+        //
+        // если пользователь на удаление - админ, но удаляющий пользователь не создатель чата, т.е. они
+        // равноправные участники, то выдаем ошибку. простой админ не может удалить из чата простого админа.
+        if (
+            participantToRemove.groupConversationParticipant.admin &&
+            !participant.groupConversationParticipant.admin.isOwner
+        ) {
+            throw new RequestException({
+                code: -3,
+                message: 'You cant remove admin',
+            });
+        }
+
+        await this.prisma.participant.update({
+            where: {
+                userId_conversationId: {
+                    userId: user.id,
+                    conversationId,
+                },
+            },
+            data: {
+                status: ParticipantInStatus.KICKED,
+            },
+        });
+
+        await this.prisma.message.create({
+            data: {
+                conversationId,
+                serviceMessage: {
+                    create: {
+                        type: ServiceMessageType.REMOVED_FROM_CONVERSATION,
+                        serviceMessageRemovedFromConversation: {
+                            create: {
+                                conversationId,
+                                userId,
+                                byUserId: user.id,
+                            },
+                        },
+                    },
+                },
+            },
+        });
+
+        return new ResponseDto({
+            code: 1,
         });
     }
 }

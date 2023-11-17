@@ -60,3 +60,12 @@ export interface ConversationsGetParticipantsRouteInput extends UserRequiredGate
     count: number;
     offset: number;
 }
+
+export interface ConversationsRemoveParticipantRouteInput extends UserRequiredGatewayRouteInput {
+    conversationId: number;
+    userId: number;
+
+    // с ними нужно обязательно что-то придумать
+    // reason: string;
+    // notifyUser: boolean;
+}
