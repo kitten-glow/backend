@@ -3,7 +3,7 @@
 #
 # slim версия образа тоже вроде пойдет
 
-FROM node:16-slim As development
+FROM node:20-slim As development
 
 WORKDIR /api
 

@@ -51,25 +51,18 @@ services:
     volumes:
       - redis_data:/data
 
-  postgres:
-    image: postgres:14-alpine
-    restart: always
-    hostname: postgres
+  crdb:
+    image: cockroachdb/cockroach:v23.1.10
+    hostname: crdb
     networks:
       - backend
-    env_file:
-      - .env
-    environment:
-      POSTGRES_USER: ${POSTGRES_DB_USERNAME}
-      POSTGRES_PASSWORD: ${POSTGRES_DB_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB_NAME}
-      PG_DATA: /var/lib/postgresql/data
+    command: start-single-node --insecure
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - crdb_data:/cockroach/cockroach-data
 
 networks:
   backend:
 
 volumes:
-  postgres_data:
+  crdb_data:
   redis_data:
