@@ -30,7 +30,6 @@ import { ConversationsService } from './conversations.service';
 import { RequestException } from '../../common/exceptions/request.exception';
 import { UserDto } from '../users/users.dto';
 import { ResponseDto } from '../../common/dto/response.dto';
-import { DateTime } from 'luxon';
 
 @Injectable()
 export class ConversationsGatewayService {
@@ -42,18 +41,27 @@ export class ConversationsGatewayService {
     public async getListRoute({ user, count, offset }: ConversationsGetListRouteInput) {
         const participants = await this.prisma.$queryRaw<{ conversationId: number; unreadCount: number }[]>`
             SELECT "conversationId",
-                   "lastSeenMessage",
-                   (SELECT COUNT(1) ::int AS "unreadCount"
+                "lastSeenMessage",
+                (SELECT COUNT(1)
                     FROM "Message" "_message"
                     WHERE "_message"."id" > "lastSeenMessage"
-                      AND "_message"."conversationId" = "_participant"."conversationId") AS "unreadCount"
+                    AND "_message"."conversationId" = "_participant"."conversationId"
+                ) AS "unreadCount"
             FROM "Participant" AS "_participant"
             WHERE "userId" = ${user.id}
-              AND "_participant"."status" = '${Prisma.raw(ParticipantInStatus.IN)}'
-              AND NOT EXISTS (SELECT 1
-                              FROM "ParticipantBan" "_participantBan"
-                              WHERE "_participantBan"."id" = "_participant"."id")
-        `;
+                AND "_participant"."status" = '${Prisma.raw(ParticipantInStatus.IN)}'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM "ParticipantBan" "_participantBan"
+                    WHERE "_participantBan"."id" = "_participant"."id"
+                )
+        `
+            .then((data) => data.map((item) => ({
+                ...item,
+                // по непонятным причинам после перехода на crdb возвращается bigint.
+                // кастить count()::int не получается
+                unreadCount: Number(item.unreadCount),
+            })));
 
         const conversations = await this.prisma.conversation.findMany({
             where: {
