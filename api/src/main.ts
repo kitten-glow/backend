@@ -5,7 +5,7 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { ClassSerializerInterceptor } from '@nestjs/common';
 
 async function bootstrap() {
-    const app = await NestFactory.create(AppModule, { cors: true });
+    const app = await NestFactory.create(AppModule);
 
     const config = new DocumentBuilder()
         .setTitle('Kitten Glow API')
@@ -18,6 +18,8 @@ async function bootstrap() {
 
     app.useGlobalFilters(new HttpExceptionFilter());
     app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
+
+    app.enableCors();
 
     await app.listen(80);
 }
