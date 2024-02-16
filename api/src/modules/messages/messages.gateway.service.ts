@@ -41,19 +41,21 @@ export class MessagesGatewayService {
                             participant: {
                                 status: ParticipantInStatus.IN,
                                 ban: null,
-                                AND: [
-                                    {
-                                        userId: user.id,
-                                    },
-                                    {
-                                        userId: userId,
-                                    },
-                                ],
+                                userId: {
+                                    in: [user.id, userId],
+                                },
                             },
                         },
                     },
                 },
+                include: {
+                    conversation: true,
+                }
             });
+
+            if (privateConversation) {
+                conversation = privateConversation.conversation;
+            }
 
             // создаем все что нужно для отправки сообщения
             if (!privateConversation) {
@@ -137,7 +139,7 @@ export class MessagesGatewayService {
         }
 
         // при отправке сообщения в чат (необязательно групповой) по его id
-        if (conversationId) {
+        else if (conversationId) {
             const groupConversation = await this.prisma.groupConversation.findFirst({
                 where: {
                     conversationId,
@@ -380,14 +382,19 @@ export class MessagesGatewayService {
         });
 
         if (!participant) {
-            return 0;
+            new ResponseDto({
+                code: -1,
+            });
         }
 
         const { conversation } = participant;
         const [message] = conversation.messages;
 
         if (message.pinned) {
-            return 0;
+            new ResponseDto({
+                code: -2,
+                message: 'Message is already pinned',
+            });
         }
 
         await this.prisma.message.update({
@@ -461,7 +468,10 @@ export class MessagesGatewayService {
         });
 
         if (!conversation) {
-            return 0;
+            new ResponseDto({
+                code: -1,
+                message: 'Conversation not found',
+            });
         }
 
         return new ResponseDto({

@@ -98,7 +98,7 @@ export class ConversationsController {
         });
     }
 
-    @Get('getMyPermissions')
+    @Get('permissions/getMy')
     public getMyPermissions(
         @AuthUserHttp() user: User,
         @Query('conversationId', ParseIntPipe, RequiredPipe)
@@ -113,7 +113,7 @@ export class ConversationsController {
     @UseGuards(PermissionsInGroupConversationGuard({ editPermissions: true }))
     @UseGuards(IsConversationGuard('group'))
     @Get('permissions/update')
-    public editPermissions(
+    public updatePermissions(
         @AuthUserHttp() user: User,
         @Query('conversationId', ParseIntPipe, RequiredPipe)
         conversationId: number,

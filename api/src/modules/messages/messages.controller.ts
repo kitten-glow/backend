@@ -14,10 +14,7 @@ import { RequiredPipe } from '../../common/pipes/required.pipe';
 @UseGuards(AuthHttpGuard)
 @Controller('messages')
 export class MessagesController {
-    constructor(
-        private readonly prisma: PrismaService,
-        private readonly messagesGatewayService: MessagesGatewayService,
-    ) {}
+    constructor(private readonly messagesGatewayService: MessagesGatewayService) {}
 
     @Get('send')
     public send(
