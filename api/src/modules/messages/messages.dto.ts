@@ -84,6 +84,9 @@ export class MessageDto {
     public senderId: number;
 
     @Expose()
+    public createdAt: Date;
+
+    @Expose()
     public pinned: boolean;
 
     @Expose()

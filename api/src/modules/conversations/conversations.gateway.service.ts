@@ -145,6 +145,7 @@ export class ConversationsGatewayService {
                         content: lastMessage.content,
                         conversationId: lastMessage.conversationId,
                         senderId: lastMessage.senderId,
+                        createdAt: lastMessage.createdAt,
                         pinned: lastMessage.pinned,
                         attachments: lastMessage.attachments,
                         serviceMessage: lastMessage.serviceMessage
@@ -250,6 +251,7 @@ export class ConversationsGatewayService {
                     content: lastMessage.content,
                     conversationId: lastMessage.conversationId,
                     senderId: lastMessage.senderId,
+                    createdAt: lastMessage.createdAt,
                     pinned: lastMessage.pinned,
                     attachments: lastMessage.attachments,
                     serviceMessage: new ServiceMessageDto({
@@ -470,6 +472,7 @@ export class ConversationsGatewayService {
                     content: lastMessage.content,
                     conversationId: lastMessage.conversationId,
                     senderId: lastMessage.senderId,
+                    createdAt: lastMessage.createdAt,
                     pinned: lastMessage.pinned,
                     attachments: lastMessage.attachments,
                     serviceMessage: lastMessage.serviceMessage
@@ -574,6 +577,7 @@ export class ConversationsGatewayService {
                 content: lastMessage.content,
                 conversationId: lastMessage.conversationId,
                 senderId: lastMessage.senderId,
+                createdAt: lastMessage.createdAt,
                 pinned: lastMessage.pinned,
                 serviceMessage: new ServiceMessageDto({
                     ...EMPTY_SERVICE_MESSAGE_DTO,
